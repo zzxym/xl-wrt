@@ -5,6 +5,7 @@
 
 # 'kernel' partition or UBI volume on NAND contains the kernel
 CI_KERNPART="${CI_KERNPART:-kernel}"
+CI_KERNPART_EXT="${CI_KERNPART_EXT}"
 
 # 'ubi' partition on NAND contains UBI
 CI_UBIPART="${CI_UBIPART:-ubi}"
@@ -346,6 +347,9 @@ nand_upgrade_tar() {
 		if [ "$kernel_mtd" ]; then
 			tar xO${gz}f "$tar_file" "$board_dir/kernel" | \
 				mtd write - "$CI_KERNPART"
+			test -n "$CI_KERNPART_EXT" && \
+			tar xf "$tar_file" "$board_dir/kernel" -O | \
+				mtd write - "$CI_KERNPART_EXT"
 		else
 			local kern_ubivol="$( nand_find_volume $ubidev "$CI_KERNPART" )"
 			tar xO${gz}f "$tar_file" "$board_dir/kernel" | \
