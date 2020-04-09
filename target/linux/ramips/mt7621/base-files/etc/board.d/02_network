@@ -47,6 +47,7 @@ ramips_setup_interfaces()
 	lenovo,newifi-d1|\
 	mikrotik,routerboard-m33g|\
 	renkforce,ws-wn530hp3-a|\
+	xwrt,t-cpe1201k-v01|\
 	xiaomi,mi-router-3g|\
 	xiaomi,mi-router-3g-nor|\
 	xiaomi,mi-router-3g-v2|\
