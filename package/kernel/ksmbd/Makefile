@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ksmbd
-PKG_VERSION:=3.4.3
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_VERSION:=3.4.4
+PKG_RELEASE:=20220221
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/cifsd-team/cifsd/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=a910c55d9e6924775e00504eddd00b49788603af29d0772cb9fb6722c189f628
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_RELEASE).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/ptpt52/ksmbd/tar.gz/$(PKG_RELEASE)?
+PKG_HASH:=61fe9e84289f41db999de9c36cbdaa6e9f086ce5a37629f3519852dae85d78ab
 
 PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
@@ -23,6 +23,7 @@ define KernelPackage/fs-ksmbd
 	URL:=https://github.com/cifsd-team/cifsd
 	FILES:=$(PKG_BUILD_DIR)/ksmbd.ko
 	DEPENDS:= \
+		+kmod-asn1-decoder \
 		+kmod-nls-base \
 		+kmod-nls-utf8 \
 		+kmod-crypto-md4 \
@@ -30,14 +31,7 @@ define KernelPackage/fs-ksmbd
 		+kmod-crypto-hmac \
 		+kmod-crypto-ecb \
 		+kmod-crypto-des \
-		+kmod-crypto-sha256 \
-		+kmod-crypto-cmac \
-		+kmod-crypto-sha512 \
-		+kmod-crypto-aead \
-		+kmod-crypto-ccm \
-		+kmod-crypto-gcm \
-		+kmod-asn1-decoder \
-		+kmod-oid-registry
+		+kmod-fs-nfs-common-rpcsec
 endef
 
 # The last two DEPENDS are hacks in order to get CONFIG_ASN1 and CONFIG_OID_REGISTRY
