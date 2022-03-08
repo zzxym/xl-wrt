@@ -52,8 +52,29 @@
 
 */
 
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/device.h>
+#include <linux/delay.h>
+#include <linux/reset.h>
+#include <linux/hrtimer.h>
+#include <linux/mii.h>
+#include <linux/of_mdio.h>
+#include <linux/of_platform.h>
+#include <linux/of_gpio.h>
+#include <linux/of_net.h>
+#include <linux/of_irq.h>
+#include <linux/phy.h>
 
 #include "gsw_sw_init.h"
+
+struct intel_gsw {
+	struct device	*dev;
+	struct mii_bus	*bus;
+	int reset_pin;
+	ethsw_api_dev_t pd;
+};
 
 /**************************************************************************/
 /*      EXTERNS Declaration:                                              */
@@ -75,7 +96,7 @@ extern int pc_uart_datawrite(u16 Offset, u16 value);
 /**************************************************************************/
 #define SWAPI_MAJOR_NUMBER	81
 
-#define SMDIO_DEFAULT_BUSADDR   (0x1)
+#define SMDIO_DEFAULT_BUSADDR   (0x0)
 #define SMDIO_DEFAULT_PHYADDR	(0x1F)
 #define DEFAULT_SWITCH_NUM      (1)
 #define SMDIO_WRADDR	(0x1F)
@@ -100,7 +121,9 @@ static GSW_return_t smdio_reg_wr(u8 mdio_id, u16 phyaddr, u16 regaddr, u16 data)
 #endif /* SMDIO_INTERFACE */
 ioctl_wrapper_init_t ioctlinit;
 ioctl_wrapper_ctx_t *pioctlctl;
+int pedev0_num = 0;
 ethsw_api_dev_t *pedev0[GSW_DEV_MAX];
+struct intel_gsw *g_gsw[GSW_DEV_MAX];
 extern gsw_lowlevel_fkts_t flow_fkt_tbl;
 
 #if defined(SUPPORT_AS_LOADABLE_MODULE) && SUPPORT_AS_LOADABLE_MODULE
@@ -139,7 +162,7 @@ void *ethsw_api_core_init(ethsw_core_init_t *einit)
 		return pd;
 	}
 	memset(pd, 0, sizeof(ethsw_api_dev_t));
-	pd->ecint = einit;
+	//pd->ecint = einit;
 	pd->edev = einit->sdev;
 	return pd;
 }
@@ -181,34 +204,26 @@ static GSW_return_t uart_reg_wr(u16 regaddr, u16 data)
 */
 static GSW_return_t WriteMdio(u8 mdio_id, u16 phyaddr, u16 regaddr, u16 data)
 {
-#if defined(KERNEL_MODE) && KERNEL_MODE
-	extern int mdio_write_ext(int mdionum, int phyaddr, int phyreg, int phydata);
-	int result;
+	struct intel_gsw *gsw = g_gsw[mdio_id];
 
-	/* Access MDIO */
-	result = mdio_write_ext(mdio_id, phyaddr, regaddr, data);
-	return (result != 0) ? GSW_statusErr : GSW_statusOk;
-#else
-	return GSW_statusErr;
-#endif
+	mutex_lock(&gsw->bus->mdio_lock);
+	gsw->bus->write(gsw->bus, phyaddr, regaddr, data);
+	mutex_unlock(&gsw->bus->mdio_lock);
+	return 0;
 }
 
 /* Customer can modify MDIO routines depends on SOC supports
 */
 static GSW_return_t ReadMdio(u8 mdio_id, u16 phyaddr, u16 regaddr, u16 *data)
 {
-#if defined(KERNEL_MODE) && KERNEL_MODE
-	extern int mdio_read_ext(int mdionum, int phyaddr, int phyreg, int *phydata);
-	int result;
-	int value;
+	int phy_value= 0;
+	struct intel_gsw *gsw = g_gsw[mdio_id];
 
-	/* Access MDIO */
-	result = mdio_read_ext(mdio_id, phyaddr, regaddr, &value);
-	*data = value;
-	return (result != 0) ? GSW_statusErr : GSW_statusOk;
-#else
-	return GSW_statusErr;
-#endif
+	mutex_lock(&gsw->bus->mdio_lock);
+	phy_value = gsw->bus->read(gsw->bus, phyaddr, regaddr);
+	mutex_unlock(&gsw->bus->mdio_lock);
+	*data = (u16)phy_value;
+	return 0;
 }
 
 /* SMDIO supported functions */
@@ -322,11 +337,11 @@ int ethsw_swapi_register(void)
 		return ret;
 	}
 #endif /* KERNEL_MODE */
-	for ( devid = 0; devid < gsw_num; devid++) {
+	for ( devid = 0; devid < gsw_num && pedev0[devid]; devid++) {
 		if (devid >= GSW_DEV_MAX)
 			return -1;
 		core_init.sdev = devid;
-		pedev0[devid] = ethsw_api_core_init(&core_init);
+		//pedev0[devid] = ethsw_api_core_init(&core_init);
 		if (pedev0[devid] == NULL) {
 			GSW_PRINT("%s:%s:%d (Error)\n", __FILE__, __func__, __LINE__);
 			return -1;
@@ -376,6 +391,7 @@ int ethsw_swapi_unregister(void)
 
 #if defined(SUPPORT_AS_LOADABLE_MODULE) && SUPPORT_AS_LOADABLE_MODULE
 #if defined(KERNEL_MODE) && KERNEL_MODE
+#if 0
 static int __init gsw_swapi_init(void)
 {
 	int res;
@@ -393,6 +409,110 @@ static void __exit gsw_swapi_exit(void)
 }
 module_init(gsw_swapi_init);
 module_exit(gsw_swapi_exit);
+#endif
+
+void init_gsw(void)
+{
+	int res;
+
+	GSW_PRINT("SWITCH API, Version %s.\n", SWAPI_DRV_VERSION);
+	gsw_num = 1;
+	res = ethsw_swapi_register();
+	GSW_PRINT("SWITCH API, Init Done. result=%d\n", res);
+}
+
+// bleow are platform driver
+static const struct of_device_id gsw150_match[] = {
+	{ .compatible = "intel,gsw150" },
+	{},
+};
+
+MODULE_DEVICE_TABLE(of, gsw150_match);
+
+static int gsw150_probe(struct platform_device *pdev)
+{
+	struct device_node *np = pdev->dev.of_node;
+	struct device_node *mdio;
+	struct mii_bus *mdio_bus;
+	struct intel_gsw *gsw;
+	const char *pm;
+
+	mdio = of_parse_phandle(np, "mediatek,mdio", 0);
+
+	if (!mdio)
+		return -EINVAL;
+
+	mdio_bus = of_mdio_find_bus(mdio);
+
+	if (!mdio_bus)
+		return -EPROBE_DEFER;
+
+	gsw = devm_kzalloc(&pdev->dev, sizeof(struct intel_gsw), GFP_KERNEL);
+
+	if (!gsw)
+		return -ENOMEM;
+
+	gsw->dev = &pdev->dev;
+
+	gsw->bus = mdio_bus;
+
+	gsw->reset_pin = of_get_named_gpio(np, "mediatek,reset-pin", 0);
+
+	g_gsw[pedev0_num] = gsw;
+	pedev0[pedev0_num++] = &gsw->pd;
+	printk("gsw150_probe gsw=%p\n", gsw);
+
+	init_gsw();
+
+#if 0
+
+	//init default vlan or init swocnfig
+	if(!of_property_read_string(pdev->dev.of_node,
+	                            "mediatek,port_map", &pm)) {
+
+		if (!strcasecmp(pm, "wllll"))
+			rtl8367s_vlan_config(1);
+		else
+			rtl8367s_vlan_config(0);
+
+	} else {
+#ifdef CONFIG_SWCONFIG
+		rtl8367s_swconfig_init(&init_gsw);
+#else
+		rtl8367s_vlan_config(0);
+#endif
+	}
+
+	//gsw_debug_proc_init();
+#endif
+
+	platform_set_drvdata(pdev, gsw);
+
+	return 0;
+
+}
+
+static int gsw150_remove(struct platform_device *pdev)
+{
+	platform_set_drvdata(pdev, NULL);
+	//gsw_debug_proc_exit();
+
+	return 0;
+}
+
+static struct platform_driver gsw_driver = {
+	.probe = gsw150_probe,
+	.remove = gsw150_remove,
+	.driver = {
+		.name = "gsw150",
+		.owner = THIS_MODULE,
+		.of_match_table = gsw150_match,
+	},
+};
+
+module_platform_driver(gsw_driver);
+
+
 #endif /* KERNEL_MODE */
 #else
 static int gsw_swapi_init()
