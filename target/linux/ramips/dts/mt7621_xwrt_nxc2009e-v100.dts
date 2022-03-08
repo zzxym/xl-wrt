@@ -61,6 +61,15 @@
 			linux,code = <KEY_RESTART>;
 		};
 	};
+
+	gsw150: gsw150@1f {
+		compatible = "intel,gsw150";
+		//reg = <0x1f>;
+		status = "okay";
+		//mediatek,ethsys = <&ethsys>;
+		mediatek,mdio = <&mdio>;
+		//mediatek,reset-pin = <&pio 54 0>;
+	};
 };
 
 &sdhci {
