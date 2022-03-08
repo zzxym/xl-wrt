@@ -56,6 +56,17 @@
 #ifndef _ETHSW_INIT_H_
 #define _ETHSW_INIT_H_
 
+#include <linux/list.h>
+#include <linux/mutex.h>
+#include <linux/netdevice.h>
+#include <linux/of_mdio.h>
+#include <linux/workqueue.h>
+#include <linux/gpio/consumer.h>
+
+#ifdef CONFIG_SWCONFIG
+#include <linux/switch.h>
+#endif
+
 #define GSW_API_MODULE_NAME "F2X SWITCH API"
 #define SWAPI_DRV_VERSION "1.0.5"
 /* Switch Features  */
