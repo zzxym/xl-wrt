@@ -68,18 +68,7 @@
 #include <linux/phy.h>
 
 #include "gsw_sw_init.h"
-
-struct intel_gsw {
-	struct device	*dev;
-	struct mii_bus	*bus;
-	int reset_pin;
-	ethsw_api_dev_t pd;
-
-#ifdef CONFIG_SWCONFIG
-	struct switch_dev swdev;
-	u32 cpu_port;
-#endif
-};
+#include "gsw_swconfig.h"
 
 /**************************************************************************/
 /*      EXTERNS Declaration:                                              */
@@ -107,9 +96,6 @@ extern int pc_uart_datawrite(u16 Offset, u16 value);
 #define SMDIO_WRADDR	(0x1F)
 #define SMDIO_RDADDR	(0x0)
 #define SUPPORT_AS_LOADABLE_MODULE 1
-#define GSW_SGMII_PORT	0x4
-#define RGMII_PORT0	0x5
-#define RGMII_PORT1	0x6
 
 /**************************************************************************/
 /*      LOCAL DECLARATIONS:                                               */
@@ -386,7 +372,7 @@ int ethsw_swapi_unregister(void)
 	gsw_api_drv_unregister(SWAPI_MAJOR_NUMBER);
 #endif
 	for ( devid = 0; devid < gsw_num; devid++) {
-		ethsw_api_core_exit(pedev0[devid]);
+		//ethsw_api_core_exit(pedev0[devid]);
 	}
 #if defined(GSW_IOCTL_SUPPORT) && GSW_IOCTL_SUPPORT
 	gsw_api_ioctl_wrapper_cleanup();
@@ -416,7 +402,7 @@ module_init(gsw_swapi_init);
 module_exit(gsw_swapi_exit);
 #endif
 
-void init_gsw(void)
+void init_gsw(struct intel_gsw *gsw)
 {
 	int res;
 
@@ -427,20 +413,75 @@ void init_gsw(void)
 
 	do {
 		int val = 0;
-		gsw_reg_rd(pedev0[0], MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
+		gsw_reg_rd(&gsw->pd, MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
 		printk("init_gsw: Part Number LSB val=%x\n", val);
 
 		val = 0;
-		gsw_reg_rd(pedev0[0], MANU_ID_MANID_OFFSET, MANU_ID_MANID_SHIFT, MANU_ID_MANID_SIZE, &val);
+		gsw_reg_rd(&gsw->pd, MANU_ID_MANID_OFFSET, MANU_ID_MANID_SHIFT, MANU_ID_MANID_SIZE, &val);
 		printk("init_gsw: Manufacturer ID val=%x\n", val);
 
 		val = 0;
-		gsw_reg_rd(pedev0[0], MANU_ID_FIX1_OFFSET, MANU_ID_FIX1_SHIFT, MANU_ID_FIX1_SIZE, &val);
+		gsw_reg_rd(&gsw->pd, MANU_ID_FIX1_OFFSET, MANU_ID_FIX1_SHIFT, MANU_ID_FIX1_SIZE, &val);
 		printk("init_gsw: Fixed to 1 val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, PNUM_ID_VER_OFFSET, 0, 16, &val);
+		printk("init_gsw: Chip Version val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, PNUM_ID_PNUMM_OFFSET, PNUM_ID_PNUMM_SHIFT, PNUM_ID_PNUMM_SIZE, &val);
+		printk("init_gsw: Part Number MSB val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, &val);
+		printk("init_gsw: SMDIO_CFG_ADDR read out val=%x\n", val);
+
+		/*XXX: change/use mdio addr 16 */
+		gsw_reg_wr(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, 16);
+		gsw->pd.mdio_addr = 16;
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
+		printk("init_gsw: Part Number LSB val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, MANU_ID_MANID_OFFSET, MANU_ID_MANID_SHIFT, MANU_ID_MANID_SIZE, &val);
+		printk("init_gsw: Manufacturer ID val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, MANU_ID_FIX1_OFFSET, MANU_ID_FIX1_SHIFT, MANU_ID_FIX1_SIZE, &val);
+		printk("init_gsw: Fixed to 1 val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, PNUM_ID_VER_OFFSET, 0, 16, &val);
+		printk("init_gsw: Chip Version val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, PNUM_ID_PNUMM_OFFSET, PNUM_ID_PNUMM_SHIFT, PNUM_ID_PNUMM_SIZE, &val);
+		printk("init_gsw: Part Number MSB val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, &val);
+		printk("init_gsw: SMDIO_CFG_ADDR read out val=%x\n", val);
 	} while (0);
+
+	intel_init(gsw);
+
+#ifdef CONFIG_SWCONFIG
+	intel_swconfig_init(gsw);
+#endif
 }
 
-// bleow are platform driver
+void deinit_gsw(struct intel_gsw *gsw)
+{
+#ifdef CONFIG_SWCONFIG
+	intel_swconfig_destroy(gsw);
+#endif
+	intel_deinit(gsw);
+	ethsw_swapi_unregister();
+}
+
+// below are platform driver
 static const struct of_device_id gsw150_match[] = {
 	{ .compatible = "intel,gsw150" },
 	{},
@@ -481,40 +522,20 @@ static int gsw150_probe(struct platform_device *pdev)
 	pedev0[pedev0_num++] = &gsw->pd;
 	printk("gsw150_probe gsw=%p\n", gsw);
 
-	init_gsw();
-
-#if 0
-
-	//init default vlan or init swocnfig
-	if(!of_property_read_string(pdev->dev.of_node,
-	                            "mediatek,port_map", &pm)) {
-
-		if (!strcasecmp(pm, "wllll"))
-			rtl8367s_vlan_config(1);
-		else
-			rtl8367s_vlan_config(0);
-
-	} else {
-#ifdef CONFIG_SWCONFIG
-		rtl8367s_swconfig_init(&init_gsw);
-#else
-		rtl8367s_vlan_config(0);
-#endif
-	}
-
-	//gsw_debug_proc_init();
-#endif
+	init_gsw(gsw);
 
 	platform_set_drvdata(pdev, gsw);
 
 	return 0;
-
 }
 
 static int gsw150_remove(struct platform_device *pdev)
 {
+	struct intel_gsw *gsw = platform_get_drvdata(pdev);
+	if (gsw) {
+		deinit_gsw(gsw);
+	}
 	platform_set_drvdata(pdev, NULL);
-	//gsw_debug_proc_exit();
 
 	return 0;
 }
