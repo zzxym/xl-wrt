@@ -74,6 +74,11 @@ struct intel_gsw {
 	struct mii_bus	*bus;
 	int reset_pin;
 	ethsw_api_dev_t pd;
+
+#ifdef CONFIG_SWCONFIG
+	struct switch_dev swdev;
+	u32 cpu_port;
+#endif
 };
 
 /**************************************************************************/
@@ -97,7 +102,7 @@ extern int pc_uart_datawrite(u16 Offset, u16 value);
 #define SWAPI_MAJOR_NUMBER	81
 
 #define SMDIO_DEFAULT_BUSADDR   (0x0)
-#define SMDIO_DEFAULT_PHYADDR	(0x1F)
+#define SMDIO_DEFAULT_PHYADDR	(0x0)
 #define DEFAULT_SWITCH_NUM      (1)
 #define SMDIO_WRADDR	(0x1F)
 #define SMDIO_RDADDR	(0x0)
@@ -419,6 +424,20 @@ void init_gsw(void)
 	gsw_num = 1;
 	res = ethsw_swapi_register();
 	GSW_PRINT("SWITCH API, Init Done. result=%d\n", res);
+
+	do {
+		int val = 0;
+		gsw_reg_rd(pedev0[0], MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
+		printk("init_gsw: Part Number LSB val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(pedev0[0], MANU_ID_MANID_OFFSET, MANU_ID_MANID_SHIFT, MANU_ID_MANID_SIZE, &val);
+		printk("init_gsw: Manufacturer ID val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(pedev0[0], MANU_ID_FIX1_OFFSET, MANU_ID_FIX1_SHIFT, MANU_ID_FIX1_SIZE, &val);
+		printk("init_gsw: Fixed to 1 val=%x\n", val);
+	} while (0);
 }
 
 // bleow are platform driver
