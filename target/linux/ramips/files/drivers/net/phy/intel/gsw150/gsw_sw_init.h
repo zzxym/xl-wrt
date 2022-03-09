@@ -209,4 +209,26 @@ typedef struct {
 #include "gsw_api_func.h"
 #include "gsw_swreg.h"
 #include "gsw708x_reg.h"
+
+
+struct intel_gsw {
+	struct device	*dev;
+	struct mii_bus	*bus;
+	int reset_pin;
+	ethsw_api_dev_t pd;
+
+#ifdef CONFIG_SWCONFIG
+	struct switch_dev swdev;
+	u32 cpu_port;
+#endif
+};
+
+#define GSW_SGMII_PORT	0x4
+#define RGMII_PORT0	0x5
+#define RGMII_PORT1	0x6
+#define INTEL_PHY_PORT_NUM 5
+#define INTEL_SWITCH_PORT_NUM 7
+
+#define PHY_CTRL_ENABLE_POWER_DOWN	(1 << 11)
+
 #endif    /* _ETHSW_INIT_H_ */
