@@ -68,6 +68,7 @@
 		status = "okay";
 		//mediatek,ethsys = <&ethsys>;
 		mediatek,mdio = <&mdio>;
+		mediatek,smi-addr = <16>;
 		//mediatek,reset-pin = <&pio 54 0>;
 	};
 };
