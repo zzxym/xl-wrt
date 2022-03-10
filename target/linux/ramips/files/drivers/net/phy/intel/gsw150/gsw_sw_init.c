@@ -414,8 +414,8 @@ void init_gsw(struct intel_gsw *gsw)
 #if 1
 	do {
 		int val;
-		printk("\ninit_gsw: assume mdio addr 16\n");
-		gsw->pd.mdio_addr = 16;
+		gsw->pd.mdio_addr = gsw->smi_addr;
+		printk("\ninit_gsw: assume mdio addr %d\n", gsw->pd.mdio_addr);
 		val = 0;
 		gsw_reg_rd(&gsw->pd, MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
 		printk("init_gsw: Part Number LSB val=%x\n", val);
@@ -437,8 +437,8 @@ void init_gsw(struct intel_gsw *gsw)
 		printk("init_gsw: Part Number MSB val=%x\n", val);
 
 
-		printk("\ninit_gsw: assume mdio addr 0\n");
 		gsw->pd.mdio_addr = 0;
+		printk("\ninit_gsw: assume mdio addr %d\n", gsw->pd.mdio_addr);
 		val = 0;
 		gsw_reg_rd(&gsw->pd, MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
 		printk("init_gsw: Part Number LSB val=%x\n", val);
@@ -465,10 +465,10 @@ void init_gsw(struct intel_gsw *gsw)
 
 
 		/*XXX: change/use mdio addr 16 */
-		gsw_reg_wr(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, 16);
-		gsw->pd.mdio_addr = 16;
+		gsw->pd.mdio_addr = gsw->smi_addr;
+		gsw_reg_wr(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, gsw->pd.mdio_addr);
 
-		printk("\ninit_gsw: change/use mdio addr 16\n");
+		printk("\ninit_gsw: rewrite/change/use mdio addr %d\n", gsw->pd.mdio_addr);
 		val = 0;
 		gsw_reg_rd(&gsw->pd, MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
 		printk("init_gsw: Part Number LSB val=%x\n", val);
@@ -547,6 +547,10 @@ static int gsw150_probe(struct platform_device *pdev)
 	gsw->bus = mdio_bus;
 
 	gsw->reset_pin = of_get_named_gpio(np, "mediatek,reset-pin", 0);
+
+	/* Fetch the SMI address dirst */
+	if (of_property_read_u32(np, "mediatek,smi-addr", &gsw->smi_addr))
+		gsw->smi_addr = SMDIO_DEFAULT_PHYADDR;
 
 	g_gsw[pedev0_num] = gsw;
 	pedev0[pedev0_num++] = &gsw->pd;

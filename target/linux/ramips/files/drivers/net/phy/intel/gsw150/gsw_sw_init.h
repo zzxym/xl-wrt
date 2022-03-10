@@ -214,6 +214,7 @@ typedef struct {
 struct intel_gsw {
 	struct device	*dev;
 	struct mii_bus	*bus;
+	u32 smi_addr;
 	int reset_pin;
 	ethsw_api_dev_t pd;
 
