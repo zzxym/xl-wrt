@@ -88,7 +88,7 @@ intel_set_vlan_ports(struct switch_dev *dev, struct switch_val *val)
 	GSW_VLAN_portMemberAdd_t parm;
 	int i = 0;
 
-	if (val->port_vlan < 0 || val->port_vlan >= 4096 || val->len >= INTEL_SWITCH_PORT_NUM)
+	if (val->port_vlan < 0 || val->port_vlan >= INTEL_NUM_VLANS || val->len >= INTEL_SWITCH_PORT_NUM)
 		return -EINVAL;
 
 	memset((void *)&vlan, 0, sizeof(GSW_VLAN_IdCreate_t));
@@ -110,8 +110,6 @@ intel_set_vlan_ports(struct switch_dev *dev, struct switch_val *val)
 			parm.bVLAN_TagEgress = 0;
 
 		GSW_VLAN_PortMemberAdd((void *)&gsw->pd, &parm);
-		printk("add port:%d for vlan:%d tagged:%d\n", p->id,
-		       val->port_vlan, parm.bVLAN_TagEgress);
 	}
 
 	return 0;
@@ -139,7 +137,6 @@ static int intel_set_port_pvid(struct switch_dev *dev, int port, int pvid)
 	struct intel_gsw *gsw = container_of(dev, struct intel_gsw, swdev);
 	GSW_return_t s;
 
-	printk("set port:%d pvid:%d\n", port, pvid);
 	s = gsw_reg_wr((void *)&gsw->pd,
 	               (PCE_DEFPVID_PVID_OFFSET + (10 * port)),
 	               PCE_DEFPVID_PVID_SHIFT,
@@ -246,6 +243,97 @@ static int intel_set_vlan_fid(struct switch_dev *dev,
 	return 0;
 }
 
+static int intel_get_port_mib(struct switch_dev *dev,
+                              const struct switch_attr *attr,
+                              struct switch_val *val)
+{
+	static char buf[4096];
+	GSW_RMON_Port_cnt_t parm;
+	struct intel_gsw *gsw = container_of(dev, struct intel_gsw, swdev);
+	int i, len = 0;
+
+	if (val->port_vlan >= INTEL_SWITCH_PORT_NUM)
+		return -EINVAL;
+
+	len += snprintf(buf + len, sizeof(buf) - len,
+	                "Port %d MIB counters\n", val->port_vlan);
+
+	parm.nPortId = val->port_vlan;
+	intel_count_rd(gsw, &parm);
+
+	len += sprintf(buf + len,
+	               "TxDrop      : %u\n"
+	               "TxUni       : %u\n"
+	               "TxMulti     : %u\n"
+	               "TxBroad     : %u\n"
+	               "TxCollision : %u\n"
+	               "TxSingleCol : %u\n"
+	               "TxMultiCol  : %u\n"
+	               "TxLateCol   : %u\n"
+	               "TxPause     : %u\n"
+	               "Tx64Byte    : %u\n"
+	               "Tx65Byte    : %u\n"
+	               "Tx128Byte   : %u\n"
+	               "Tx256Byte   : %u\n"
+	               "Tx512Byte   : %u\n"
+	               "Tx1024Byte  : %u\n"
+	               "TxByte      : %llu\n",
+	               parm.nTxDroppedPkts,
+	               parm.nTxUnicastPkts,
+	               parm.nTxMulticastPkts,
+	               parm.nTxBroadcastPkts,
+	               parm.nTxCollCount,
+	               parm.nTxSingleCollCount,
+	               parm.nTxMultCollCount,
+	               parm.nTxLateCollCount,
+	               parm.nTxPauseCount,
+	               parm.nTx64BytePkts,
+	               parm.nRx127BytePkts,
+	               parm.nRx255BytePkts,
+	               parm.nRx511BytePkts,
+	               parm.nRx1023BytePkts,
+	               parm.nRxMaxBytePkts,
+	               parm.nTxGoodBytes);
+
+	len += sprintf(buf + len,
+	               "RxDrop      : %u\n"
+	               "RxFiltered  : %u\n"
+	               "RxUni       : %u\n"
+	               "RxMulti     : %u\n"
+	               "RxBroad     : %u\n"
+	               "RxAlignErr  : %u\n"
+	               "RxUnderSize : %u\n"
+	               "RxOverSize  : %u\n"
+	               "RxPause     : %u\n"
+	               "Rx64Byte    : %u\n"
+	               "Rx65Byte    : %u\n"
+	               "Rx128Byte   : %u\n"
+	               "Rx256Byte   : %u\n"
+	               "Rx512Byte   : %u\n"
+	               "Rx1024Byte  : %u\n"
+	               "RxByte      : %llu\n",
+	               parm.nRxDroppedPkts,
+	               parm.nRxFilteredPkts,
+	               parm.nRxUnicastPkts,
+	               parm.nRxMulticastPkts,
+	               parm.nRxBroadcastPkts,
+	               parm.nRxAlignErrorPkts,
+	               parm.nRxUnderSizeGoodPkts,
+	               parm.nRxOversizeGoodPkts,
+	               parm.nRxGoodPausePkts,
+	               parm.nRx64BytePkts,
+	               parm.nRx127BytePkts,
+	               parm.nRx255BytePkts,
+	               parm.nRx511BytePkts,
+	               parm.nRx1023BytePkts,
+	               parm.nRxMaxBytePkts,
+	               parm.nRxGoodBytes);
+
+	val->value.s = buf;
+	val->len = len;
+	return 0;
+}
+
 static struct switch_attr intel_globals[] = {
 	{
 		.type = SWITCH_TYPE_INT,
@@ -259,6 +347,13 @@ static struct switch_attr intel_globals[] = {
 };
 
 static struct switch_attr intel_port[] = {
+	{
+		.type = SWITCH_TYPE_STRING,
+		.name = "mib",
+		.description = "Get MIB counters for port",
+		.get = intel_get_port_mib,
+		.set = NULL,
+	},
 };
 
 static struct switch_attr intel_vlan[] = {
@@ -296,30 +391,30 @@ struct switch_dev_ops intel_switch_ops = {
 
 int intel_swconfig_init(struct intel_gsw *gsw)
 {
-        struct switch_dev *swdev;
-        int ret;
+	struct switch_dev *swdev;
+	int ret;
 
-        gsw->cpu_port = RGMII_PORT0;
+	gsw->cpu_port = RGMII_PORT0;
 
-        swdev = &gsw->swdev;
+	swdev = &gsw->swdev;
 
-        swdev->name = "gsw150";
-        swdev->alias = "gsw150";
-        swdev->cpu_port = gsw->cpu_port;
-        swdev->ports = INTEL_SWITCH_PORT_NUM;
-        swdev->vlans = 4096;
-        swdev->ops = &intel_switch_ops;
+	swdev->name = "gsw150";
+	swdev->alias = "gsw150";
+	swdev->cpu_port = gsw->cpu_port;
+	swdev->ports = INTEL_SWITCH_PORT_NUM;
+	swdev->vlans = INTEL_NUM_VLANS;
+	swdev->ops = &intel_switch_ops;
 
-        ret = register_switch(swdev, NULL);
-        if (ret) {
-                dev_notice(gsw->dev, "Failed to register switch %s\n",
-                           swdev->name);
-                return ret;
-        }
+	ret = register_switch(swdev, NULL);
+	if (ret) {
+		dev_notice(gsw->dev, "Failed to register switch %s\n",
+		           swdev->name);
+		return ret;
+	}
 
-        intel_apply_vlan_config(swdev);
+	intel_apply_vlan_config(swdev);
 
-        return 0;
+	return 0;
 }
 
 void intel_swconfig_destroy(struct intel_gsw *gsw)
@@ -562,7 +657,6 @@ static int intel_rgmii_init(struct intel_gsw *gsw, int port)
 	s = intel_mdio_wr(gsw, (MAC_CTRL_4_LPIEN_OFFSET + (0xC * port)),
 	                  MAC_CTRL_4_LPIEN_SHIFT,
 	                  MAC_CTRL_4_LPIEN_SIZE, 0);
-	printk("End %s\n", __func__);
 	return 0;
 }
 
@@ -725,87 +819,5 @@ int sf_intel_setAsicReg(unsigned int Offset, unsigned int value)
 {
 	u16 Shift = 0, Size = 16;
 	return intel_mdio_wr(Offset, Shift, Size, value);
-}
-
-int intel_get_mib(unsigned int port, char *buf) {
-	int ret = 0;
-	GSW_RMON_Port_cnt_t parm;
-	parm.nPortId = port;
-
-	SF_MDIO_LOCK();
-	intel_count_rd(&parm);
-	SF_MDIO_UNLOCK();
-
-	ret = sprintf(buf, "mib: Port %u MIB counters\n", port);
-
-	ret += sprintf(buf+ret,
-	               "TxDrop:%u\n"
-	               "TxUni:%u\n"
-	               "TxMulti:%u\n"
-	               "TxBroad:%u\n"
-	               "TxCollision:%u\n"
-	               "TxSingleCol:%u\n"
-	               "TxMultiCol:%u\n"
-	               "TxLateCol:%u\n"
-	               "TxPause:%u\n"
-	               "Tx64Byte:%u\n"
-	               "Tx65Byte:%u\n"
-	               "Tx128Byte:%u\n"
-	               "Tx256Byte:%u\n"
-	               "Tx512Byte:%u\n"
-	               "Tx1024Byte:%u\n"
-	               "TxByte:%llu\n",
-	               parm.nTxDroppedPkts,
-	               parm.nTxUnicastPkts,
-	               parm.nTxMulticastPkts,
-	               parm.nTxBroadcastPkts,
-	               parm.nTxCollCount,
-	               parm.nTxSingleCollCount,
-	               parm.nTxMultCollCount,
-	               parm.nTxLateCollCount,
-	               parm.nTxPauseCount,
-	               parm.nTx64BytePkts,
-	               parm.nRx127BytePkts,
-	               parm.nRx255BytePkts,
-	               parm.nRx511BytePkts,
-	               parm.nRx1023BytePkts,
-	               parm.nRxMaxBytePkts,
-	               parm.nTxGoodBytes);
-
-	ret += sprintf(buf+ret,
-	               "RxDrop:%u\n"
-	               "RxFiltered:%u\n"
-	               "RxUni:%u\n"
-	               "RxMulti:%u\n"
-	               "RxBroad:%u\n"
-	               "RxAlignErr:%u\n"
-	               "RxUnderSize:%u\n"
-	               "RxOverSize:%u\n"
-	               "RxPause:%u\n"
-	               "Rx64Byte:%u\n"
-	               "Rx65Byte:%u\n"
-	               "Rx128Byte:%u\n"
-	               "Rx256Byte:%u\n"
-	               "Rx512Byte:%u\n"
-	               "Rx1024Byte:%u\n"
-	               "RxByte:%llu\n",
-	               parm.nRxDroppedPkts,
-	               parm.nRxFilteredPkts,
-	               parm.nRxUnicastPkts,
-	               parm.nRxMulticastPkts,
-	               parm.nRxBroadcastPkts,
-	               parm.nRxAlignErrorPkts,
-	               parm.nRxUnderSizeGoodPkts,
-	               parm.nRxOversizeGoodPkts,
-	               parm.nRxGoodPausePkts,
-	               parm.nRx64BytePkts,
-	               parm.nRx127BytePkts,
-	               parm.nRx255BytePkts,
-	               parm.nRx511BytePkts,
-	               parm.nRx1023BytePkts,
-	               parm.nRxMaxBytePkts,
-	               parm.nRxGoodBytes);
-
-	return ret;
 }
 #endif

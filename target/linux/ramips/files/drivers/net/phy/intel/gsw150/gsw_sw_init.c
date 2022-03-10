@@ -91,7 +91,7 @@ extern int pc_uart_datawrite(u16 Offset, u16 value);
 #define SWAPI_MAJOR_NUMBER	81
 
 #define SMDIO_DEFAULT_BUSADDR   (0x0)
-#define SMDIO_DEFAULT_PHYADDR	(0x0)
+#define SMDIO_DEFAULT_PHYADDR	(0x10)
 #define DEFAULT_SWITCH_NUM      (1)
 #define SMDIO_WRADDR	(0x1F)
 #define SMDIO_RDADDR	(0x0)
@@ -411,8 +411,35 @@ void init_gsw(struct intel_gsw *gsw)
 	res = ethsw_swapi_register();
 	GSW_PRINT("SWITCH API, Init Done. result=%d\n", res);
 
+#if 1
 	do {
-		int val = 0;
+		int val;
+		printk("\ninit_gsw: assume mdio addr 16\n");
+		gsw->pd.mdio_addr = 16;
+		val = 0;
+		gsw_reg_rd(&gsw->pd, MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
+		printk("init_gsw: Part Number LSB val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, MANU_ID_MANID_OFFSET, MANU_ID_MANID_SHIFT, MANU_ID_MANID_SIZE, &val);
+		printk("init_gsw: Manufacturer ID val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, MANU_ID_FIX1_OFFSET, MANU_ID_FIX1_SHIFT, MANU_ID_FIX1_SIZE, &val);
+		printk("init_gsw: Fixed to 1 val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, PNUM_ID_VER_OFFSET, 0, 16, &val);
+		printk("init_gsw: Chip Version val=%x\n", val);
+
+		val = 0;
+		gsw_reg_rd(&gsw->pd, PNUM_ID_PNUMM_OFFSET, PNUM_ID_PNUMM_SHIFT, PNUM_ID_PNUMM_SIZE, &val);
+		printk("init_gsw: Part Number MSB val=%x\n", val);
+
+
+		printk("\ninit_gsw: assume mdio addr 0\n");
+		gsw->pd.mdio_addr = 0;
+		val = 0;
 		gsw_reg_rd(&gsw->pd, MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
 		printk("init_gsw: Part Number LSB val=%x\n", val);
 
@@ -436,10 +463,12 @@ void init_gsw(struct intel_gsw *gsw)
 		gsw_reg_rd(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, &val);
 		printk("init_gsw: SMDIO_CFG_ADDR read out val=%x\n", val);
 
+
 		/*XXX: change/use mdio addr 16 */
 		gsw_reg_wr(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, 16);
 		gsw->pd.mdio_addr = 16;
 
+		printk("\ninit_gsw: change/use mdio addr 16\n");
 		val = 0;
 		gsw_reg_rd(&gsw->pd, MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
 		printk("init_gsw: Part Number LSB val=%x\n", val);
@@ -464,6 +493,7 @@ void init_gsw(struct intel_gsw *gsw)
 		gsw_reg_rd(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, &val);
 		printk("init_gsw: SMDIO_CFG_ADDR read out val=%x\n", val);
 	} while (0);
+#endif
 
 	intel_init(gsw);
 
