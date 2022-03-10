@@ -168,7 +168,7 @@
 
 &gmac1 {
 	status = "okay";
-	phy-mode = "rgmii";
+	phy-mode = "rgmii-rxid";
 	label = "eth1";
 	nvmem-cells = <&macaddr_factory_22>;
 	nvmem-cell-names = "mac-address";
