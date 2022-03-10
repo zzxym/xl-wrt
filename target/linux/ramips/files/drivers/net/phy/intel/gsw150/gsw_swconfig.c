@@ -660,7 +660,7 @@ static int intel_rgmii_init(struct intel_gsw *gsw, int port)
 	return 0;
 }
 
-#ifdef CONFIG_SF19A28_MPW1
+#if 1
 static int intel_port_rgmii_dalay_set(struct intel_gsw *gsw, int port, int txDelay, int rxDelay)
 {
 	if ((txDelay > 7) || (rxDelay > 7))
@@ -777,7 +777,7 @@ void intel_init(struct intel_gsw *gsw)
 	GSW_HW_Init(&gsw->pd, &pHwInit);
 
 	intel_rgmii_init(gsw, RGMII_PORT0);
-#ifdef CONFIG_SF19A28_MPW1
+#if 1
 	intel_port_rgmii_dalay_set(gsw, RGMII_PORT0, 2, 0);
 #endif
 	intel_enable_all_phy(gsw);
