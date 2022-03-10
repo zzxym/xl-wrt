@@ -221,6 +221,7 @@ struct intel_gsw {
 #ifdef CONFIG_SWCONFIG
 	struct switch_dev swdev;
 	u32 cpu_port;
+	struct mutex reg_mutex;
 #endif
 };
 
