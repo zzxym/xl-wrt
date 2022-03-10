@@ -63,7 +63,9 @@ intel_get_vlan_ports(struct switch_dev *dev, struct switch_val *val)
 
 	memset((void *)&parm, 0, sizeof(GSW_VLAN_portMemberRead_t));
 	parm.nVId = val->port_vlan;
+	mutex_lock(&gsw->reg_mutex);
 	GSW_VLAN_PortMemberRead((void *)&gsw->pd, &parm);
+	mutex_unlock(&gsw->reg_mutex);
 
 	port = &val->value.ports[0];
 	val->len = 0;
@@ -95,7 +97,9 @@ intel_set_vlan_ports(struct switch_dev *dev, struct switch_val *val)
 	memset((void *)&parm, 0, sizeof(GSW_VLAN_portMemberAdd_t));
 	vlan.nVId = val->port_vlan;
 	vlan.nFId = vlan.nVId; // RM#8744 fix lan-wan bridge fail
+	mutex_lock(&gsw->reg_mutex);
 	GSW_VLAN_IdCreate((void *)&gsw->pd, &vlan);
+	mutex_unlock(&gsw->reg_mutex);
 
 	parm.nVId = val->port_vlan;
 	for (i = 0; i < val->len; i++) {
@@ -109,7 +113,9 @@ intel_set_vlan_ports(struct switch_dev *dev, struct switch_val *val)
 		else
 			parm.bVLAN_TagEgress = 0;
 
+		mutex_lock(&gsw->reg_mutex);
 		GSW_VLAN_PortMemberAdd((void *)&gsw->pd, &parm);
+		mutex_unlock(&gsw->reg_mutex);
 	}
 
 	return 0;
@@ -121,10 +127,12 @@ static int intel_get_port_pvid(struct switch_dev *dev, int port, int *val)
 	GSW_return_t s;
 	ur nPortVId;
 
+	mutex_lock(&gsw->reg_mutex);
 	s = gsw_reg_rd((void *)&gsw->pd,
 	               (PCE_DEFPVID_PVID_OFFSET + (10 * port)),
 	               PCE_DEFPVID_PVID_SHIFT,
 	               PCE_DEFPVID_PVID_SIZE, &nPortVId);
+	mutex_unlock(&gsw->reg_mutex);
 	if (s != GSW_statusOk)
 		return s;
 
@@ -137,10 +145,12 @@ static int intel_set_port_pvid(struct switch_dev *dev, int port, int pvid)
 	struct intel_gsw *gsw = container_of(dev, struct intel_gsw, swdev);
 	GSW_return_t s;
 
+	mutex_lock(&gsw->reg_mutex);
 	s = gsw_reg_wr((void *)&gsw->pd,
 	               (PCE_DEFPVID_PVID_OFFSET + (10 * port)),
 	               PCE_DEFPVID_PVID_SHIFT,
 	               PCE_DEFPVID_PVID_SIZE, pvid);
+	mutex_unlock(&gsw->reg_mutex);
 	if (s != GSW_statusOk)
 		return s;
 
@@ -156,7 +166,9 @@ static int intel_get_port_link(struct switch_dev *dev,  int port,
 
 	memset((void *)&parm, 0, sizeof(GSW_portLinkCfg_t));
 	parm.nPortId = port;
+	mutex_lock(&gsw->reg_mutex);
 	GSW_PortLinkCfgGet((void *)&gsw->pd, &parm);
+	mutex_unlock(&gsw->reg_mutex);
 
 	link->link = !parm.eLink;
 	link->duplex = !parm.eDuplex;
@@ -184,10 +196,12 @@ static int intel_get_vlan_enable(struct switch_dev *dev,
 	struct intel_gsw *gsw = container_of(dev, struct intel_gsw, swdev);
 	ur r;
 	GSW_return_t s;
+	mutex_lock(&gsw->reg_mutex);
 	s = gsw_reg_rd((void *)&gsw->pd,
 	               PCE_GCTRL_0_VLAN_OFFSET,
 	               PCE_GCTRL_0_VLAN_SHIFT,
 	               PCE_GCTRL_0_VLAN_SIZE, &r);
+	mutex_unlock(&gsw->reg_mutex);
 	if (s != GSW_statusOk)
 		return s;
 
@@ -202,10 +216,12 @@ static int intel_set_vlan_enable(struct switch_dev *dev,
 	struct intel_gsw *gsw = container_of(dev, struct intel_gsw, swdev);
 	// enable vlan aware
 	GSW_return_t s;
+	mutex_lock(&gsw->reg_mutex);
 	s = gsw_reg_wr((void *)&gsw->pd,
 	               PCE_GCTRL_0_VLAN_OFFSET,
 	               PCE_GCTRL_0_VLAN_SHIFT,
 	               PCE_GCTRL_0_VLAN_SIZE, val->value.i);
+	mutex_unlock(&gsw->reg_mutex);
 	if (s != GSW_statusOk)
 		return s;
 
@@ -221,7 +237,9 @@ static int intel_get_vlan_fid(struct switch_dev *dev,
 
 	memset((void *)&parm, 0, sizeof(GSW_VLAN_IdGet_t));
 	parm.nVId = val->port_vlan;
+	mutex_lock(&gsw->reg_mutex);
 	GSW_VLAN_IdGet((void *)&gsw->pd, &parm);
+	mutex_unlock(&gsw->reg_mutex);
 
 	val->value.i = parm.nFId;
 
@@ -238,7 +256,9 @@ static int intel_set_vlan_fid(struct switch_dev *dev,
 	memset((void *)&parm, 0, sizeof(GSW_VLAN_IdCreate_t));
 	parm.nVId = val->port_vlan;
 	parm.nFId = val->value.i;
+	mutex_lock(&gsw->reg_mutex);
 	GSW_VLAN_IdCreate((void *)&gsw->pd, &parm);
+	mutex_unlock(&gsw->reg_mutex);
 
 	return 0;
 }
@@ -259,7 +279,9 @@ static int intel_get_port_mib(struct switch_dev *dev,
 	                "Port %d MIB counters\n", val->port_vlan);
 
 	parm.nPortId = val->port_vlan;
+	mutex_lock(&gsw->reg_mutex);
 	intel_count_rd(gsw, &parm);
+	mutex_unlock(&gsw->reg_mutex);
 
 	len += sprintf(buf + len,
 	               "TxDrop      : %u\n"
@@ -394,6 +416,8 @@ int intel_swconfig_init(struct intel_gsw *gsw)
 	struct switch_dev *swdev;
 	int ret;
 
+	mutex_init(&gsw->reg_mutex);
+
 	gsw->cpu_port = RGMII_PORT0;
 
 	swdev = &gsw->swdev;
@@ -419,6 +443,7 @@ int intel_swconfig_init(struct intel_gsw *gsw)
 
 void intel_swconfig_destroy(struct intel_gsw *gsw)
 {
+	mutex_destroy(&gsw->reg_mutex);
 	unregister_switch(&gsw->swdev);
 }
 
