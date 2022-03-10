@@ -2137,7 +2137,7 @@ define Device/xwrt_nxc2009e-v100
   IMAGE_SIZE := 15808k
   DEVICE_VENDOR := XWRT
   DEVICE_MODEL := NXC2009E-V100
-  DEVICE_PACKAGES := uboot-envtools
+  DEVICE_PACKAGES := uboot-envtools kmod-gsw150
 endef
 TARGET_DEVICES += xwrt_nxc2009e-v100
 
