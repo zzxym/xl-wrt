@@ -229,6 +229,8 @@ struct intel_gsw {
 #define INTEL_PHY_PORT_NUM 5
 #define INTEL_SWITCH_PORT_NUM 7
 
+#define INTEL_NUM_VLANS	4096
+
 #define PHY_CTRL_ENABLE_POWER_DOWN	(1 << 11)
 
 #endif    /* _ETHSW_INIT_H_ */
