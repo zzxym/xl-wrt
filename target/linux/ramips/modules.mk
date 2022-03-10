@@ -133,3 +133,20 @@ define KernelPackage/sound-mt7620/description
 endef
 
 $(eval $(call KernelPackage,sound-mt7620))
+
+define KernelPackage/gsw150
+  SUBMENU:=Other modules
+  TITLE:=Intel gsw150 switch driver
+  DEPENDS:=@TARGET_ramips
+  KCONFIG:= \
+	CONFIG_GSW150_SUPPORT
+  FILES:= \
+	$(LINUX_DIR)/drivers/net/phy/intel/gsw150/gsw150.ko
+  AUTOLOAD:=$(call AutoProbe,gsw150)
+endef
+
+define KernelPackage/sound-mt7620/description
+ Phy modules for intel gsw150 switch driver.
+endef
+
+$(eval $(call KernelPackage,gsw150))
