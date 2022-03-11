@@ -411,87 +411,51 @@ void init_gsw(struct intel_gsw *gsw)
 	res = ethsw_swapi_register();
 	GSW_PRINT("SWITCH API, Init Done. result=%d\n", res);
 
+	gsw->pd.mdio_addr = gsw->smi_addr;
+
 #if 1
 	do {
-		int val;
-		gsw->pd.mdio_addr = gsw->smi_addr;
-		printk("\ninit_gsw: assume mdio addr %d\n", gsw->pd.mdio_addr);
-		val = 0;
-		gsw_reg_rd(&gsw->pd, MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
-		printk("init_gsw: Part Number LSB val=%x\n", val);
+		int i;
+		int addr = -1;
+		int chip_ver = -1;
+		int chip_id = -1;
 
-		val = 0;
-		gsw_reg_rd(&gsw->pd, MANU_ID_MANID_OFFSET, MANU_ID_MANID_SHIFT, MANU_ID_MANID_SIZE, &val);
-		printk("init_gsw: Manufacturer ID val=%x\n", val);
+		gsw_reg_rd(&gsw->pd, PNUM_ID_VER_OFFSET, 0, 16, &chip_ver);
+		gsw_reg_rd(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, &addr);
+		gsw_reg_rd(&gsw->pd, MANU_ID_MANID_OFFSET, MANU_ID_MANID_SHIFT, MANU_ID_MANID_SIZE, &chip_id);
 
-		val = 0;
-		gsw_reg_rd(&gsw->pd, MANU_ID_FIX1_OFFSET, MANU_ID_FIX1_SHIFT, MANU_ID_FIX1_SIZE, &val);
-		printk("init_gsw: Fixed to 1 val=%x\n", val);
+		if (!(chip_id == 0x389 && chip_ver == 0x2003 && addr == gsw->pd.mdio_addr)) {
+			printk("init_gsw: Wrong smdio addr addr=%u (expected %u) chip_id=0x%x chip_ver=0x%x\n", addr, gsw->pd.mdio_addr, chip_id, chip_ver);
+			printk("init_gsw: Try smdio addr re-program to %u\n", gsw->smi_addr);
+			for (i = 0; i <= 31; i++) {
+				gsw->pd.mdio_addr = i;
+				gsw_reg_wr(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, gsw->smi_addr);
 
-		val = 0;
-		gsw_reg_rd(&gsw->pd, PNUM_ID_VER_OFFSET, 0, 16, &val);
-		printk("init_gsw: Chip Version val=%x\n", val);
+				gsw->pd.mdio_addr = gsw->smi_addr;
+				gsw_reg_rd(&gsw->pd, PNUM_ID_VER_OFFSET, 0, 16, &chip_ver);
+				gsw_reg_rd(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, &addr);
+				gsw_reg_rd(&gsw->pd, MANU_ID_MANID_OFFSET, MANU_ID_MANID_SHIFT, MANU_ID_MANID_SIZE, &chip_id);
+				if (chip_id == 0x389 && chip_ver == 0x2003 && addr == gsw->pd.mdio_addr) {
+					printk("init_gsw: Try smdio addr re-program to %u via addr %u done!\n", gsw->smi_addr, i);
+					break;
+				}
+			}
 
-		val = 0;
-		gsw_reg_rd(&gsw->pd, PNUM_ID_PNUMM_OFFSET, PNUM_ID_PNUMM_SHIFT, PNUM_ID_PNUMM_SIZE, &val);
-		printk("init_gsw: Part Number MSB val=%x\n", val);
+			//check again
+			gsw->pd.mdio_addr = gsw->smi_addr;
 
+			gsw_reg_rd(&gsw->pd, PNUM_ID_VER_OFFSET, 0, 16, &chip_ver);
+			gsw_reg_rd(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, &addr);
+			gsw_reg_rd(&gsw->pd, MANU_ID_MANID_OFFSET, MANU_ID_MANID_SHIFT, MANU_ID_MANID_SIZE, &chip_id);
 
-		gsw->pd.mdio_addr = 0;
-		printk("\ninit_gsw: assume mdio addr %d\n", gsw->pd.mdio_addr);
-		val = 0;
-		gsw_reg_rd(&gsw->pd, MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
-		printk("init_gsw: Part Number LSB val=%x\n", val);
-
-		val = 0;
-		gsw_reg_rd(&gsw->pd, MANU_ID_MANID_OFFSET, MANU_ID_MANID_SHIFT, MANU_ID_MANID_SIZE, &val);
-		printk("init_gsw: Manufacturer ID val=%x\n", val);
-
-		val = 0;
-		gsw_reg_rd(&gsw->pd, MANU_ID_FIX1_OFFSET, MANU_ID_FIX1_SHIFT, MANU_ID_FIX1_SIZE, &val);
-		printk("init_gsw: Fixed to 1 val=%x\n", val);
-
-		val = 0;
-		gsw_reg_rd(&gsw->pd, PNUM_ID_VER_OFFSET, 0, 16, &val);
-		printk("init_gsw: Chip Version val=%x\n", val);
-
-		val = 0;
-		gsw_reg_rd(&gsw->pd, PNUM_ID_PNUMM_OFFSET, PNUM_ID_PNUMM_SHIFT, PNUM_ID_PNUMM_SIZE, &val);
-		printk("init_gsw: Part Number MSB val=%x\n", val);
-
-		val = 0;
-		gsw_reg_rd(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, &val);
-		printk("init_gsw: SMDIO_CFG_ADDR read out val=%x\n", val);
-
-
-		/*XXX: change/use mdio addr 16 */
-		gsw->pd.mdio_addr = gsw->smi_addr;
-		gsw_reg_wr(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, gsw->pd.mdio_addr);
-
-		printk("\ninit_gsw: rewrite/change/use mdio addr %d\n", gsw->pd.mdio_addr);
-		val = 0;
-		gsw_reg_rd(&gsw->pd, MANU_ID_PNUML_OFFSET, MANU_ID_PNUML_SHIFT, MANU_ID_PNUML_SIZE, &val);
-		printk("init_gsw: Part Number LSB val=%x\n", val);
-
-		val = 0;
-		gsw_reg_rd(&gsw->pd, MANU_ID_MANID_OFFSET, MANU_ID_MANID_SHIFT, MANU_ID_MANID_SIZE, &val);
-		printk("init_gsw: Manufacturer ID val=%x\n", val);
-
-		val = 0;
-		gsw_reg_rd(&gsw->pd, MANU_ID_FIX1_OFFSET, MANU_ID_FIX1_SHIFT, MANU_ID_FIX1_SIZE, &val);
-		printk("init_gsw: Fixed to 1 val=%x\n", val);
-
-		val = 0;
-		gsw_reg_rd(&gsw->pd, PNUM_ID_VER_OFFSET, 0, 16, &val);
-		printk("init_gsw: Chip Version val=%x\n", val);
-
-		val = 0;
-		gsw_reg_rd(&gsw->pd, PNUM_ID_PNUMM_OFFSET, PNUM_ID_PNUMM_SHIFT, PNUM_ID_PNUMM_SIZE, &val);
-		printk("init_gsw: Part Number MSB val=%x\n", val);
-
-		val = 0;
-		gsw_reg_rd(&gsw->pd, SMDIO_CFG_ADDR_OFFSET, SMDIO_CFG_ADDR_SHIFT, SMDIO_CFG_ADDR_SIZE, &val);
-		printk("init_gsw: SMDIO_CFG_ADDR read out val=%x\n", val);
+			if (!(chip_id == 0x389 && chip_ver == 0x2003 && addr == gsw->pd.mdio_addr)) {
+				printk("init_gsw: smdio addr re-program failed! addr=%u (expected %u) chip_id=0x%x chip_ver=0x%x\n", addr, gsw->pd.mdio_addr, chip_id, chip_ver);
+			} else {
+				printk("init_gsw: smdio addr re-program done! addr=%u (expected %u) chip_id=0x%x chip_ver=0x%x\n", addr, gsw->pd.mdio_addr, chip_id, chip_ver);
+			}
+		} else {
+			printk("init_gsw: smdio addr ready! addr=%u (expected %u) chip_id=0x%x chip_ver=0x%x\n", addr, gsw->pd.mdio_addr, chip_id, chip_ver);
+		}
 	} while (0);
 #endif
 
