@@ -148,7 +148,7 @@
 	port6: port@6 {
 		compatible = "mediatek,mt753x-port";
 		reg = <6>;
-		phy-mode = "rgmii";
+		phy-mode = "trgmii";
 		fixed-link {
 			speed = <1000>;
 			full-duplex;
@@ -182,6 +182,7 @@
 	mtd-mac-address = <&factory 0xe000>;
 	nvmem-cells = <&macaddr_factory_e000>;
 	nvmem-cell-names = "mac-address";
+	phy-mode = "trgmii";
 };
 
 &pinctrl {
