@@ -311,7 +311,7 @@ enum fe_work_flag {
 #define RX_DMA_TAG		BIT(15)
 /* rxd3 */
 #define RX_DMA_TPID(_x)		(((_x) >> 16) & 0xffff)
-#define RX_DMA_VID(_x)		((_x) & 0xffff)
+#define RX_DMA_VID(_x)		((_x) & 0x1fff)
 /* rxd4 */
 #define RX_DMA_L4VALID		BIT(30)
 
@@ -554,6 +554,7 @@ int mtk_flow_offload(struct fe_priv *eth,
 		     flow_offload_t *flow,
 		     flow_offload_hw_path_t *src,
 		     flow_offload_hw_path_t *dest);
+void ra_flow_offload_stop(void);
 #endif
 int ra_offload_check_rx(struct fe_priv *eth, struct sk_buff *skb, u32 rxd4);
 
