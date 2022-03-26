@@ -720,7 +720,7 @@ static int fe_tx_map_dma(struct sk_buff *skb, struct net_device *dev,
 	}
 
 #ifdef CONFIG_NET_RALINK_OFFLOAD
-	if ((skb->vlan_tci & HWNAT_QUEUE_MAPPING_MAGIC_MASK) == HWNAT_QUEUE_MAPPING_MAGIC &&
+	if ((skb->mark & HWNAT_QUEUE_MAPPING_MAGIC_MASK) == HWNAT_QUEUE_MAPPING_MAGIC &&
 		(skb->hash & HWNAT_QUEUE_MAPPING_MAGIC_MASK) == HWNAT_QUEUE_MAPPING_MAGIC) {
 		st.txd.txd4 &= ~(TX_DMA_FPORT_MASK << TX_DMA_FPORT_SHIFT);
 		st.txd.txd4 |= (0x4 & TX_DMA_FPORT_MASK) << TX_DMA_FPORT_SHIFT;
