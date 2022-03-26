@@ -1,24 +1,24 @@
-From 38fa11e43b137ab01daefee500c869a458e8e942 Mon Sep 17 00:00:00 2001
+From d389a84f8b17ed02094470e380688b5a5e8ae8e0 Mon Sep 17 00:00:00 2001
 From: Chen Minqiang <ptpt52@gmail.com>
 Date: Mon, 21 Feb 2022 14:00:16 +0800
 Subject: [PATCH] hwnat: add natflow flow offload support
 
 Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 ---
- drivers/net/ethernet/mediatek/mtk_eth_soc.c   |  60 +-
- drivers/net/ethernet/mediatek/mtk_eth_soc.h   |  18 +-
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c   |  72 +-
+ drivers/net/ethernet/mediatek/mtk_eth_soc.h   |  19 +-
  drivers/net/ethernet/mediatek/mtk_ppe.c       |  69 +-
  drivers/net/ethernet/mediatek/mtk_ppe.h       |  15 +-
- .../net/ethernet/mediatek/mtk_ppe_offload.c   | 653 ++++++------------
+ .../net/ethernet/mediatek/mtk_ppe_offload.c   | 662 ++++++------------
  drivers/net/ppp/ppp_generic.c                 |  29 +
  drivers/net/ppp/pppoe.c                       |  28 +
  include/linux/netdevice.h                     |  19 +
  include/linux/ppp_channel.h                   |   3 +
- include/net/netfilter/nf_flow_table.h         |  47 ++
+ include/net/netfilter/nf_flow_table.h         |  48 ++
  net/8021q/vlan_dev.c                          |  24 +
  net/bridge/br_device.c                        |  27 +
  net/dsa/slave.c                               |  27 +
- 13 files changed, 541 insertions(+), 478 deletions(-)
+ 13 files changed, 572 insertions(+), 470 deletions(-)
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
@@ -80,7 +80,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  
  skip_rx:
  		ring->data[idx] = new_data;
-@@ -2964,6 +2972,35 @@ static int mtk_set_rxnfc(struct net_devi
+@@ -2964,6 +2972,46 @@ static int mtk_set_rxnfc(struct net_devi
  	return ret;
  }
  
@@ -113,19 +113,31 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 +	return mtk_flow_offload_add(eth, type, flow, src, dest);
 +}
 +
++static int mtk_flow_offload_check(flow_offload_hw_path_t *path)
++{
++	if (!(path->flags & FLOW_OFFLOAD_PATH_ETHERNET))
++		return -EINVAL;
++
++	if ((path->flags & FLOW_OFFLOAD_PATH_STOP)) {
++		mtk_flow_offload_stop();
++	}
++	return 0;
++}
++
  static const struct ethtool_ops mtk_ethtool_ops = {
  	.get_link_ksettings	= mtk_get_link_ksettings,
  	.set_link_ksettings	= mtk_set_link_ksettings,
-@@ -2996,7 +3033,7 @@ static const struct net_device_ops mtk_n
+@@ -2996,7 +3044,8 @@ static const struct net_device_ops mtk_n
  #ifdef CONFIG_NET_POLL_CONTROLLER
  	.ndo_poll_controller	= mtk_poll_controller,
  #endif
 -	.ndo_setup_tc		= mtk_eth_setup_tc,
 +	.ndo_flow_offload	= mtk_flow_offload,
++	.ndo_flow_offload_check	= mtk_flow_offload_check,
  };
  
  static int mtk_add_mac(struct mtk_eth *eth, struct device_node *np)
-@@ -3311,6 +3348,7 @@ static int mtk_probe(struct platform_dev
+@@ -3311,6 +3360,7 @@ static int mtk_probe(struct platform_dev
  	return 0;
  
  err_deinit_mdio:
@@ -133,7 +145,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  	mtk_mdio_cleanup(eth);
  err_free_dev:
  	mtk_free_dev(eth);
-@@ -3326,6 +3364,8 @@ static int mtk_remove(struct platform_de
+@@ -3326,6 +3376,8 @@ static int mtk_remove(struct platform_de
  	struct mtk_mac *mac;
  	int i;
  
@@ -174,7 +186,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  };
  
  /* struct mtk_mac -	the structure that holds the info about the MACs of the
-@@ -1026,9 +1031,12 @@ int mtk_gmac_sgmii_path_setup(struct mtk
+@@ -1026,9 +1031,13 @@ int mtk_gmac_sgmii_path_setup(struct mtk
  int mtk_gmac_gephy_path_setup(struct mtk_eth *eth, int mac_id);
  int mtk_gmac_rgmii_path_setup(struct mtk_eth *eth, int mac_id);
  
@@ -187,6 +199,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 +			 flow_offload_t *flow,
 +			 flow_offload_hw_path_t *src,
 +			 flow_offload_hw_path_t *dest);
++void mtk_flow_offload_stop(void);
 +int mtk_offload_check_rx(struct mtk_eth *eth, struct sk_buff *skb, u32 rxd4);
  
  #endif /* MTK_ETH_H */
@@ -371,7 +384,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  #endif
 --- a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
-@@ -3,525 +3,272 @@
+@@ -3,525 +3,297 @@
   *  Copyright (C) 2020 Felix Fietkau <nbd@nbd.name>
   */
  
@@ -477,7 +490,12 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 -static int
 -mtk_flow_mangle_ports(const struct flow_action_entry *act,
 -		      struct mtk_flow_data *data)
--{
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
++static void mtk_ppe_account_group_walk(unsigned long ignore)
++#else
++static void mtk_ppe_account_group_walk(struct timer_list *ignore)
++#endif
+ {
 -	u32 val = ntohl(act->mangle.val);
 -
 -	switch (act->mangle.offset) {
@@ -489,31 +507,6 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 -		break;
 -	case 2:
 -		data->dst_port = cpu_to_be16(val);
--		break;
--	default:
--		return -EINVAL;
--	}
--
--	return 0;
--}
--
--static int
--mtk_flow_mangle_ipv4(const struct flow_action_entry *act,
--		     struct mtk_flow_data *data)
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
-+static void mtk_ppe_account_group_walk(unsigned long ignore)
-+#else
-+static void mtk_ppe_account_group_walk(struct timer_list *ignore)
-+#endif
- {
--	__be32 *dest;
--
--	switch (act->mangle.offset) {
--	case offsetof(struct iphdr, saddr):
--		dest = &data->v4.src_addr;
--		break;
--	case offsetof(struct iphdr, daddr):
--		dest = &data->v4.dst_addr;
 -		break;
 -	default:
 -		return -EINVAL;
@@ -561,41 +554,58 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 +		}
  	}
  
--	memcpy(dest, &act->mangle.val, sizeof(u32));
--
 -	return 0;
 +	mod_timer(&ag_timer, jiffies + HZ * 1);
  }
  
+-static int
+-mtk_flow_mangle_ipv4(const struct flow_action_entry *act,
+-		     struct mtk_flow_data *data)
++static void mtk_ppe_account_group_walk_stop(void)
+ {
+-	__be32 *dest;
+-
+-	switch (act->mangle.offset) {
+-	case offsetof(struct iphdr, saddr):
+-		dest = &data->v4.src_addr;
+-		break;
+-	case offsetof(struct iphdr, daddr):
+-		dest = &data->v4.dst_addr;
+-		break;
+-	default:
+-		return -EINVAL;
++	u32 i;
++	struct mtk_ppe_account_group *ag;
++	for (i = 1; i < 64; i++) {
++		ag = mtk_ppe_account_group_get(i);
++		if (ag->state == MTK_FOE_STATE_BIND) {
++			ag->state = MTK_FOE_STATE_INVALID;
++		}
+ 	}
+-
+-	memcpy(dest, &act->mangle.val, sizeof(u32));
+-
+-	return 0;
+ }
+ 
  static int
 -mtk_flow_get_dsa_port(struct net_device **dev)
+-{
+-#if IS_ENABLED(CONFIG_NET_DSA)
+-	struct dsa_port *dp;
 +mtk_offload_prepare_v4(struct mtk_eth *eth, struct mtk_foe_entry *entry,
 +                       flow_offload_tuple_t *s_tuple,
 +                       flow_offload_tuple_t *d_tuple,
 +                       flow_offload_hw_path_t *src,
 +                       flow_offload_hw_path_t *dest)
- {
--#if IS_ENABLED(CONFIG_NET_DSA)
--	struct dsa_port *dp;
--
--	dp = dsa_port_from_netdev(*dev);
--	if (IS_ERR(dp))
--		return -ENODEV;
++{
 +	int dest_port = 1;
- 
--	if (dp->cpu_dp->tag_ops->proto != DSA_TAG_PROTO_MTK)
--		return -ENODEV;
++
 +	if (dest->dev == eth->netdev[1])
 +		dest_port = 2;
- 
--	*dev = dp->cpu_dp->master;
++
 +	dest_port = (dest->dev->netdev_ops->ndo_flow_offload ? dest_port : 0);
- 
--	return dp->index;
--#else
--	return -ENODEV;
--#endif
--}
++
 +	mtk_foe_entry_prepare(entry, MTK_PPE_PKT_TYPE_IPV4_HNAPT, s_tuple->l4proto,
 +	                      dest_port, dest->eth_src, dest->eth_dest);
 +	mtk_foe_entry_set_ipv4_tuple(entry, false,
@@ -605,6 +615,21 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 +	                             d_tuple->dst_v4.s_addr, d_tuple->dst_port,
 +	                             d_tuple->src_v4.s_addr, d_tuple->src_port);
  
+-	dp = dsa_port_from_netdev(*dev);
+-	if (IS_ERR(dp))
+-		return -ENODEV;
+-
+-	if (dp->cpu_dp->tag_ops->proto != DSA_TAG_PROTO_MTK)
+-		return -ENODEV;
+-
+-	*dev = dp->cpu_dp->master;
+-
+-	return dp->index;
+-#else
+-	return -ENODEV;
+-#endif
+-}
+-
 -static int
 -mtk_flow_set_output_device(struct mtk_eth *eth, struct mtk_foe_entry *foe,
 -			   struct net_device *dev)
@@ -658,20 +683,31 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 -	int err = 0;
 -	int hash;
 -	int i;
--
++	u32 ag_idx;
++	struct mtk_ppe_account_group *ag;
+ 
 -	if (rhashtable_lookup(&eth->flow_table, &f->cookie, mtk_flow_ht_params))
 -		return -EEXIST;
--
++	if (otuple->l4proto != IPPROTO_TCP && otuple->l4proto != IPPROTO_UDP)
++		return -EINVAL;
+ 
 -	if (flow_rule_match_key(rule, FLOW_DISSECTOR_KEY_META)) {
 -		struct flow_match_meta match;
--
++	if (type == FLOW_OFFLOAD_DEL) {
++		rhash = (unsigned long)flow->timeout;
++		ohash = rhash >> 16;
++		rhash &= 0xffff;
++		mtk_foe_entry_clear(&eth->ppe, ohash);
++		mtk_foe_entry_clear(&eth->ppe, rhash);
++		rcu_assign_pointer(eth->foe_flow_table[ohash], NULL);
++		rcu_assign_pointer(eth->foe_flow_table[rhash], NULL);
++		synchronize_rcu();
+ 
 -		flow_rule_match_meta(rule, &match);
 -	} else {
 -		return -EOPNOTSUPP;
 -	}
-+	u32 ag_idx;
-+	struct mtk_ppe_account_group *ag;
- 
+-
 -	if (flow_rule_match_key(rule, FLOW_DISSECTOR_KEY_CONTROL)) {
 -		struct flow_match_control match;
 -
@@ -683,24 +719,13 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 -
 -	if (flow_rule_match_key(rule, FLOW_DISSECTOR_KEY_BASIC)) {
 -		struct flow_match_basic match;
-+	if (otuple->l4proto != IPPROTO_TCP && otuple->l4proto != IPPROTO_UDP)
-+		return -EINVAL;
- 
+-
 -		flow_rule_match_basic(rule, &match);
 -		l4proto = match.key->ip_proto;
 -	} else {
 -		return -EOPNOTSUPP;
 -	}
-+	if (type == FLOW_OFFLOAD_DEL) {
-+		rhash = (unsigned long)flow->timeout;
-+		ohash = rhash >> 16;
-+		rhash &= 0xffff;
-+		mtk_foe_entry_clear(&eth->ppe, ohash);
-+		mtk_foe_entry_clear(&eth->ppe, rhash);
-+		rcu_assign_pointer(eth->foe_flow_table[ohash], NULL);
-+		rcu_assign_pointer(eth->foe_flow_table[rhash], NULL);
-+		synchronize_rcu();
- 
+-
 -	flow_action_for_each(i, act, &rule->action) {
 -		switch (act->id) {
 -		case FLOW_ACTION_MANGLE:
@@ -770,13 +795,14 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 -		data.dst_port = ports.key->dst;
 -	} else {
 -		return -EOPNOTSUPP;
--	}
--
+ 	}
+ 
 -	if (addr_type == FLOW_DISSECTOR_KEY_IPV4_ADDRS) {
 -		struct flow_match_ipv4_addrs addrs;
 -
 -		flow_rule_match_ipv4_addrs(rule, &addrs);
--
++	timestamp = mtk_r32(eth, 0x0010);
+ 
 -		data.v4.src_addr = addrs.key->src;
 -		data.v4.dst_addr = addrs.key->dst;
 -
@@ -828,15 +854,14 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 -			return -EOPNOTSUPP;
 -
 -		mtk_foe_entry_set_vlan(&foe, data.vlan.id);
- 	}
+-	}
 -	if (data.pppoe.num == 1)
 -		mtk_foe_entry_set_pppoe(&foe, data.pppoe.sid);
- 
+-
 -	err = mtk_flow_set_output_device(eth, &foe, odev);
 -	if (err)
 -		return err;
-+	timestamp = mtk_r32(eth, 0x0010);
- 
+-
 -	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
 -	if (!entry)
 -		return -ENOMEM;
@@ -896,11 +921,10 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  
 -static int
 -mtk_flow_offload_destroy(struct mtk_eth *eth, struct flow_cls_offload *f)
-+static void mtk_offload_keepalive(struct mtk_eth *eth, unsigned int hash)
++void mtk_flow_offload_stop(void)
  {
 -	struct mtk_flow_entry *entry;
-+	flow_offload_t *flow;
- 
+-
 -	entry = rhashtable_lookup(&eth->flow_table, &f->cookie,
 -				  mtk_flow_ht_params);
 -	if (!entry)
@@ -910,37 +934,21 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 -	rhashtable_remove_fast(&eth->flow_table, &entry->node,
 -			       mtk_flow_ht_params);
 -	kfree(entry);
--
++	int i;
++	struct mtk_eth *eth = (struct mtk_eth *)ag_timer_eth;
+ 
 -	return 0;
-+	rcu_read_lock();
-+	flow = rcu_dereference(eth->foe_flow_table[hash]);
-+	if (flow) {
-+		void (*func)(unsigned int, unsigned long, unsigned long, unsigned int *, unsigned int *);
-+		func = (void *)flow->priv;
-+		if (func) {
-+			struct mtk_foe_entry *entry = &eth->ppe.foe_table[hash];
-+			u32 ag_idx = FIELD_GET(MTK_FOE_IB2_PORT_AG, entry->ipv4.ib2);
-+			struct mtk_ppe_account_group *ag = mtk_ppe_account_group_get(ag_idx);
-+			if (ag && ag->state == MTK_FOE_STATE_BIND && ag->hash == hash) {
-+				if (ag->priv != func) {
-+					unsigned long bytes = ag->bytes;
-+					unsigned long packets = ag->packets;
-+					func(hash, bytes, packets, ag->speed_bytes, ag->speed_packets);
-+					ag->bytes -= bytes;
-+					ag->packets -= packets;
-+					ag->priv = func;
-+				}
-+			} else {
-+				func(hash, 0, 0, NULL, NULL);
-+			}
++	if (eth) {
++		for (i = 0; i < MTK_PPE_ENTRIES; i++) {
++			rcu_assign_pointer(eth->foe_flow_table[i], NULL);
 +		}
 +	}
-+	rcu_read_unlock();
++	mtk_ppe_account_group_walk_stop();
  }
  
 -static int
 -mtk_flow_offload_stats(struct mtk_eth *eth, struct flow_cls_offload *f)
-+int mtk_offload_check_rx(struct mtk_eth *eth, struct sk_buff *skb, u32 rxd4)
++static void mtk_offload_keepalive(struct mtk_eth *eth, unsigned int hash)
  {
 -	struct mtk_flow_entry *entry;
 -	int timestamp;
@@ -957,16 +965,41 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 -
 -	idle = mtk_eth_timestamp(eth) - timestamp;
 -	f->stats.lastused = jiffies - idle * HZ;
--
--	return 0;
--}
--
--static DEFINE_MUTEX(mtk_flow_offload_mutex);
-+	unsigned int hash;
++	flow_offload_t *flow;
  
+-	return 0;
++	rcu_read_lock();
++	flow = rcu_dereference(eth->foe_flow_table[hash]);
++	if (flow) {
++		void (*func)(unsigned int, unsigned long, unsigned long, unsigned int *, unsigned int *);
++		func = (void *)flow->priv;
++		if (func) {
++			struct mtk_foe_entry *entry = &eth->ppe.foe_table[hash];
++			u32 ag_idx = FIELD_GET(MTK_FOE_IB2_PORT_AG, entry->ipv4.ib2);
++			struct mtk_ppe_account_group *ag = mtk_ppe_account_group_get(ag_idx);
++			if (ag && ag->state == MTK_FOE_STATE_BIND && ag->hash == hash && ag->priv != func) {
++				unsigned long bytes = ag->bytes;
++				unsigned long packets = ag->packets;
++				func(hash, bytes, packets, ag->speed_bytes, ag->speed_packets);
++				//printk("hnat-ag[%u]: hash=%u bytes=%llu packets=%llu\n", ag_idx, hash, bytes, packets);
++				ag->bytes -= bytes;
++				ag->packets -= packets;
++				if (ag->priv != (void *)func)
++					ag->priv = func;
++			} else {
++				func(hash, 0, 0, NULL, NULL);
++			}
++		}
++	}
++	rcu_read_unlock();
+ }
+ 
+-static DEFINE_MUTEX(mtk_flow_offload_mutex);
+-
 -static int
 -mtk_eth_setup_tc_block_cb(enum tc_setup_type type, void *type_data, void *cb_priv)
--{
++int mtk_offload_check_rx(struct mtk_eth *eth, struct sk_buff *skb, u32 rxd4)
+ {
 -	struct flow_cls_offload *cls = type_data;
 -	struct net_device *dev = cb_priv;
 -	struct mtk_mac *mac = netdev_priv(dev);
@@ -990,6 +1023,8 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 -	case FLOW_CLS_STATS:
 -		err = mtk_flow_offload_stats(eth, cls);
 -		break;
++	unsigned int hash;
++
 +	switch (FIELD_GET(MTK_RXD4_PPE_CPU_REASON, rxd4)) {
 +	case MTK_PPE_CPU_REASON_KEEPALIVE_UC_OLD_HDR:
 +	case MTK_PPE_CPU_REASON_KEEPALIVE_MC_NEW_HDR:
@@ -1249,7 +1284,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  struct ppp_channel {
 --- a/include/net/netfilter/nf_flow_table.h
 +++ b/include/net/netfilter/nf_flow_table.h
-@@ -171,6 +171,53 @@ struct flow_offload {
+@@ -171,6 +171,54 @@ struct flow_offload {
  	struct rcu_head				rcu_head;
  };
  
@@ -1257,6 +1292,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 +#define FLOW_OFFLOAD_PATH_VLAN          BIT(1)
 +#define FLOW_OFFLOAD_PATH_PPPOE         BIT(2)
 +#define FLOW_OFFLOAD_PATH_DSA           BIT(3)
++#define FLOW_OFFLOAD_PATH_STOP          BIT(4)
 +
 +struct flow_offload_tuple_fake {
 +	union {
