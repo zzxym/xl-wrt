@@ -35,7 +35,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  	if (skb_vlan_tag_present(skb))
  		txd4 |= TX_DMA_INS_VLAN | skb_vlan_tag_get(skb);
  
-+	if ((skb->vlan_tci & HWNAT_QUEUE_MAPPING_MAGIC_MASK) == HWNAT_QUEUE_MAPPING_MAGIC &&
++	if ((skb->mark & HWNAT_QUEUE_MAPPING_MAGIC_MASK) == HWNAT_QUEUE_MAPPING_MAGIC &&
 +		(skb->hash & HWNAT_QUEUE_MAPPING_MAGIC_MASK) == HWNAT_QUEUE_MAPPING_MAGIC) {
 +		txd4 &= ~(TX_DMA_FPORT_MASK << TX_DMA_FPORT_SHIFT);
 +		txd4 |= (0x4 & TX_DMA_FPORT_MASK) << TX_DMA_FPORT_SHIFT;
