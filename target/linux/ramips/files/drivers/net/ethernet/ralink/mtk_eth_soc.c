@@ -1546,6 +1546,19 @@ fe_flow_offload(flow_offload_type_t type, flow_offload_t *flow,
 
 	return mtk_flow_offload(priv, type, flow, src, dest);
 }
+
+#if IS_ENABLED(CONFIG_NF_FLOW_TABLE)
+static int fe_flow_offload_check(flow_offload_hw_path_t *path)
+{
+	if (!(path->flags & FLOW_OFFLOAD_PATH_ETHERNET))
+		return -EINVAL;
+
+	if ((path->flags & FLOW_OFFLOAD_PATH_STOP)) {
+		ra_flow_offload_stop();
+	}
+	return 0;
+}
+#endif
 #endif
 
 static const struct net_device_ops fe_netdev_ops = {
@@ -1567,6 +1580,9 @@ static const struct net_device_ops fe_netdev_ops = {
 #endif
 #ifdef CONFIG_NET_RALINK_OFFLOAD
 	.ndo_flow_offload	= fe_flow_offload,
+#if IS_ENABLED(CONFIG_NF_FLOW_TABLE)
+	.ndo_flow_offload_check	= fe_flow_offload_check,
+#endif
 #endif
 };
 

@@ -554,6 +554,7 @@ int mtk_flow_offload(struct fe_priv *eth,
 		     flow_offload_t *flow,
 		     flow_offload_hw_path_t *src,
 		     flow_offload_hw_path_t *dest);
+void ra_flow_offload_stop(void);
 #endif
 int ra_offload_check_rx(struct fe_priv *eth, struct sk_buff *skb, u32 rxd4);
 

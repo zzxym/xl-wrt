@@ -115,6 +115,18 @@ static void mtk_ppe_account_group_walk(struct timer_list *ignore)
 	mod_timer(&ag_timer, jiffies + HZ * 1);
 }
 
+static void mtk_ppe_account_group_walk_stop(void)
+{
+	u32 i;
+	struct mtk_ppe_account_group *ag;
+	for (i = 1; i < 64; i++) {
+		ag = mtk_ppe_account_group_get(i);
+		if (ag->state == FOE_STATE_BIND) {
+			ag->state = FOE_STATE_INVALID;
+		}
+	}
+}
+
 static u32
 mtk_flow_hash_v4(flow_offload_tuple_t *tuple)
 {
@@ -352,6 +364,19 @@ int mtk_flow_offload(struct mtk_eth *eth,
 	*/
 
 	return 0;
+}
+
+void ra_flow_offload_stop(void)
+{
+	int i;
+	struct mtk_eth *eth = (struct mtk_eth *)ag_timer_eth;
+
+	if (eth) {
+		for (i = 0; i < MTK_PPE_ENTRY_CNT; i++) {
+			rcu_assign_pointer(eth->foe_flow_table[i], NULL);
+		}
+	}
+	mtk_ppe_account_group_walk_stop();
 }
 
 #ifdef CONFIG_NET_RALINK_HW_QOS
