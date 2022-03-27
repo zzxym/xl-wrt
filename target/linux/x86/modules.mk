@@ -88,7 +88,7 @@ define KernelPackage/meraki-mx100
   SUBMENU:=$(OTHER_MENU)
   TITLE:=Cisco Meraki MX100 Platform Driver
   DEPENDS:=@TARGET_x86 +kmod-tg3 +kmod-gpio-button-hotplug +kmod-leds-gpio \
-    +kmod-usb-ledtrig-usbport +nu801 +kmod-itco-wdt +kmod-leds-uleds
+    +kmod-usb-ledtrig-usbport +kmod-itco-wdt +kmod-leds-uleds
   KCONFIG:=CONFIG_MERAKI_MX100
   FILES:=$(LINUX_DIR)/drivers/platform/x86/meraki-mx100.ko
   AUTOLOAD:=$(call AutoLoad,60,meraki-mx100,1)
@@ -96,7 +96,7 @@ endef
 
 define KernelPackage/meraki-mx100/description
   This driver provides support for the front button and LEDs on
-  the Cisco Meraki MX100 (Tinkerbell) 1U appliance. Note this also
+  the Cisco Meraki MX100 (Tinkerbell) 1U appliance. Please also
   selects the gpio-cdev nu801 userspace driver to support the Status
   LED, as well as other required platform drivers.
 endef
