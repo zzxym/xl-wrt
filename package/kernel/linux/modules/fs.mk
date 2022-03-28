@@ -375,6 +375,24 @@ endef
 $(eval $(call KernelPackage,fs-msdos))
 
 
+define KernelPackage/fs-virtiofs
+  SUBMENU:=$(FS_MENU)
+  TITLE:=Virtiofs filesystem support
+  DEPENDS:=+kmod-fuse
+  KCONFIG:=CONFIG_VIRTIO_FS CONFIG_VIRTIO CONFIG_VIRTIO_BLK CONFIG_VIRTIO_NET
+  FILES:=$(LINUX_DIR)/fs/fuse/virtiofs.ko \
+	 $(LINUX_DIR)/drivers/virtio/virtio.ko \
+	 $(LINUX_DIR)/drivers/virtio/virtio_ring.ko
+  AUTOLOAD:=$(call AutoLoad,30,virtiofs)
+endef
+
+define KernelPackage/fs-virtiofs/description
+  Kernel module for Virtiofs filesystem support
+endef
+
+$(eval $(call KernelPackage,fs-virtiofs))
+
+
 define KernelPackage/fs-nfs
   SUBMENU:=$(FS_MENU)
   TITLE:=NFS filesystem client support
