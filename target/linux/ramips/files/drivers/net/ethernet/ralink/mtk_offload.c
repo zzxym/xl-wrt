@@ -711,10 +711,11 @@ static void mtk_offload_keepalive(struct fe_priv *eth, unsigned int hash)
 					ag->bytes -= bytes;
 					ag->packets -= packets;
 					ag->priv = func;
+					rcu_read_unlock();
+					return;
 				}
-			} else {
-				func(hash, 0, 0, NULL, NULL);
 			}
+			func(hash, 0, 0, NULL, NULL);
 		}
 	}
 	rcu_read_unlock();
