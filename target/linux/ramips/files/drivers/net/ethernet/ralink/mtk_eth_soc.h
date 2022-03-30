@@ -311,7 +311,7 @@ enum fe_work_flag {
 #define RX_DMA_TAG		BIT(15)
 /* rxd3 */
 #define RX_DMA_TPID(_x)		(((_x) >> 16) & 0xffff)
-#define RX_DMA_VID(_x)		((_x) & 0xffff)
+#define RX_DMA_VID(_x)		((_x) & 0x1fff)
 /* rxd4 */
 #define RX_DMA_L4VALID		BIT(30)
 
