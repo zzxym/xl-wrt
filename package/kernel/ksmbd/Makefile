@@ -31,6 +31,14 @@ define KernelPackage/fs-ksmbd
 		+kmod-crypto-hmac \
 		+kmod-crypto-ecb \
 		+kmod-crypto-des \
+		+kmod-crypto-sha256 \
+		+kmod-crypto-cmac \
+		+kmod-crypto-sha512 \
+		+kmod-crypto-aead \
+		+kmod-crypto-ccm \
+		+kmod-crypto-gcm \
+		+kmod-asn1-decoder \
+		+kmod-oid-registry \
 		+kmod-fs-nfs-common-rpcsec
 endef
 
