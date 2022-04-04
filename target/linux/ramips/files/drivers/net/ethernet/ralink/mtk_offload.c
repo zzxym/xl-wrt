@@ -72,7 +72,7 @@ static void mtk_ppe_account_group_walk(struct timer_list *ignore)
 	unsigned long long bytes, packets;
 	struct mtk_ppe_account_group *ag;
 	struct mtk_eth *eth = (struct mtk_eth *)ag_timer_eth;
-	void (*func)(unsigned int, unsigned long, unsigned long, unsigned int *, unsigned int *);
+	void (*func)(unsigned int, unsigned long, unsigned long, unsigned int *, unsigned int *, int);
 	for (i = 1; i < 64; i++) {
 		ag = mtk_ppe_account_group_get(i);
 		if (ag->state == FOE_STATE_BIND) {
@@ -92,7 +92,7 @@ static void mtk_ppe_account_group_walk(struct timer_list *ignore)
 				if (entry->bfib1.state == BIND && bytes > 0 && packets > 0) {
 					bytes = ag->bytes;
 					packets = ag->packets;
-					func(ag->hash, bytes, packets, ag->speed_bytes, ag->speed_packets);
+					func(ag->hash, bytes, packets, ag->speed_bytes, ag->speed_packets, 1);
 					ag->bytes = 0;
 					ag->packets = 0;
 				} else {
@@ -697,7 +697,7 @@ static void mtk_offload_keepalive(struct fe_priv *eth, unsigned int hash)
 	rcu_read_lock();
 	flow = rcu_dereference(eth->foe_flow_table[hash]);
 	if (flow) {
-		void (*func)(unsigned int, unsigned long, unsigned long, unsigned int *, unsigned int *);
+		void (*func)(unsigned int, unsigned long, unsigned long, unsigned int *, unsigned int *, int);
 		func = (void *)flow->priv;
 		if (func) {
 			struct mtk_foe_entry *entry = &eth->foe_table[hash];
@@ -707,7 +707,7 @@ static void mtk_offload_keepalive(struct fe_priv *eth, unsigned int hash)
 				if (ag->priv != func) {
 					unsigned long bytes = ag->bytes;
 					unsigned long packets = ag->packets;
-					func(hash, bytes, packets, ag->speed_bytes, ag->speed_packets);
+					func(hash, bytes, packets, ag->speed_bytes, ag->speed_packets, 1);
 					ag->bytes -= bytes;
 					ag->packets -= packets;
 					ag->priv = func;
@@ -715,7 +715,7 @@ static void mtk_offload_keepalive(struct fe_priv *eth, unsigned int hash)
 					return;
 				}
 			}
-			func(hash, 0, 0, NULL, NULL);
+			func(hash, 0, 0, NULL, NULL, 1);
 		}
 	}
 	rcu_read_unlock();
