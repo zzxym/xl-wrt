@@ -2792,13 +2792,14 @@ endef
 TARGET_DEVICES += xwrt_puppies
 
 define Device/xwrt_nxc2009e-v100
-  $(Device/dsa-migration)
+  $(Device/nand)
   $(Device/uimage-lzma-loader)
   DEVICE_COMPAT_VERSION := 1.0
   DEVICE_COMPAT_MESSAGE := Config is compat with swconfig
-  IMAGE_SIZE := 15808k
   DEVICE_VENDOR := XWRT
   DEVICE_MODEL := NXC2009E-V100
+  IMAGES += factory.bin
+  IMAGE/factory.bin := append-kernel | pad-to $$(KERNEL_SIZE) | append-ubi | check-size
   DEVICE_PACKAGES := uboot-envtools kmod-gsw150 kmod-i2c-gpio i2c-tools xs2184
 endef
 TARGET_DEVICES += xwrt_nxc2009e-v100
