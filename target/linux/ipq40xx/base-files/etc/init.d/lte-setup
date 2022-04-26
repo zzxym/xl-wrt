@@ -1,0 +1,13 @@
+#!/bin/sh /etc/rc.common
+
+START=10
+
+boot() {
+	case $(board_name) in
+	p2w,r619ac-64m|\
+	p2w,r619ac-128m)
+		echo "414" >/sys/class/gpio/export
+		echo "out" >/sys/class/gpio/gpio414/direction
+		;;
+	esac
+}
