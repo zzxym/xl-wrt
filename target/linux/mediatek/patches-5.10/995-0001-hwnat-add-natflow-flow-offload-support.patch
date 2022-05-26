@@ -872,7 +872,7 @@ Subject: [PATCH] hwnat: add natflow flow offload support
 +}
 --- /dev/null
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload1.c
-@@ -0,0 +1,299 @@
+@@ -0,0 +1,301 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + *  Copyright (C) 2020 Felix Fietkau <nbd@nbd.name>
@@ -972,6 +972,8 @@ Subject: [PATCH] hwnat: add natflow flow offload support
 +		dest_port = 2;
 +
 +	dest_port = (dest->dev->netdev_ops->ndo_flow_offload ? dest_port : 0);
++	if (dest->flags & FLOW_OFFLOAD_PATH_EXTDEV)
++		dest_port = 0;
 +
 +	mtk_foe_entry_prepare(entry, MTK_PPE_PKT_TYPE_IPV4_HNAPT, s_tuple->l4proto,
 +	                      dest_port, dest->eth_src, dest->eth_dest);
@@ -1321,7 +1323,7 @@ Subject: [PATCH] hwnat: add natflow flow offload support
  struct ppp_channel {
 --- a/include/net/netfilter/nf_flow_table.h
 +++ b/include/net/netfilter/nf_flow_table.h
-@@ -171,6 +171,54 @@ struct flow_offload {
+@@ -171,6 +171,55 @@ struct flow_offload {
  	struct rcu_head				rcu_head;
  };
  
@@ -1330,6 +1332,7 @@ Subject: [PATCH] hwnat: add natflow flow offload support
 +#define FLOW_OFFLOAD_PATH_PPPOE         BIT(2)
 +#define FLOW_OFFLOAD_PATH_DSA           BIT(3)
 +#define FLOW_OFFLOAD_PATH_STOP          BIT(4)
++#define FLOW_OFFLOAD_PATH_EXTDEV        BIT(5)
 +
 +struct flow_offload_tuple_fake {
 +	union {
