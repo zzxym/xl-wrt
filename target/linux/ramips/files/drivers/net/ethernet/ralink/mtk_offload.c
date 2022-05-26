@@ -178,6 +178,8 @@ mtk_foe_prepare_v4(struct mtk_foe_entry *entry,
 #else
 	entry->ipv4_hnapt.iblk2.dp = (dest->dev->name[3] - '0') + 1;
 #endif
+	if (dest->flags & FLOW_OFFLOAD_PATH_EXTDEV)
+		entry->ipv4_hnapt.iblk2.dp = 0;
 
 	entry->ipv4_hnapt.sip = ntohl(tuple->src_v4.s_addr);
 	entry->ipv4_hnapt.dip = ntohl(tuple->dst_v4.s_addr);
