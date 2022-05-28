@@ -872,7 +872,7 @@ Subject: [PATCH] hwnat: add natflow flow offload support
 +}
 --- /dev/null
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload1.c
-@@ -0,0 +1,301 @@
+@@ -0,0 +1,340 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + *  Copyright (C) 2020 Felix Fietkau <nbd@nbd.name>
@@ -996,6 +996,40 @@ Subject: [PATCH] hwnat: add natflow flow offload support
 +	return 0;
 +}
 +
++static int
++mtk_offload_prepare_v6(struct mtk_eth *eth, struct mtk_foe_entry *entry,
++                       flow_offload_tuple_t *s_tuple,
++                       flow_offload_tuple_t *d_tuple,
++                       flow_offload_hw_path_t *src,
++                       flow_offload_hw_path_t *dest)
++{
++	int dest_port = 1;
++
++	if (dest->dev == eth->netdev[1])
++		dest_port = 2;
++
++	dest_port = (dest->dev->netdev_ops->ndo_flow_offload ? dest_port : 0);
++	if (dest->flags & FLOW_OFFLOAD_PATH_EXTDEV)
++		dest_port = 0;
++
++	mtk_foe_entry_prepare(entry, MTK_PPE_PKT_TYPE_IPV6_ROUTE_5T, s_tuple->l4proto,
++	                      dest_port, dest->eth_src, dest->eth_dest);
++	mtk_foe_entry_set_ipv6_tuple(entry,
++	                             s_tuple->src_v6.s6_addr32, s_tuple->src_port,
++	                             s_tuple->dst_v6.s6_addr32, s_tuple->dst_port);
++
++	if (dest->flags & FLOW_OFFLOAD_PATH_PPPOE)
++		mtk_foe_entry_set_pppoe(entry, dest->pppoe_sid);
++
++	if (dest->flags & FLOW_OFFLOAD_PATH_VLAN)
++		mtk_foe_entry_set_vlan(entry, dest->vlan_id);
++
++	if (dest->dsa_port != 0xffff)
++		mtk_foe_entry_set_dsa(entry, dest->dsa_port);
++
++	return 0;
++}
++
 +int mtk_flow_offload_add(struct mtk_eth *eth, flow_offload_type_t type,
 +                         flow_offload_t *flow,
 +                         flow_offload_hw_path_t *src,
@@ -1029,6 +1063,11 @@ Subject: [PATCH] hwnat: add natflow flow offload support
 +	case AF_INET:
 +		if (mtk_offload_prepare_v4(eth, &orig, otuple, rtuple, src, dest) ||
 +		        mtk_offload_prepare_v4(eth, &reply, rtuple, otuple, dest, src))
++			return -EINVAL;
++		break;
++	case AF_INET6:
++		if (mtk_offload_prepare_v6(eth, &orig, otuple, rtuple, src, dest) ||
++		        mtk_offload_prepare_v6(eth, &reply, rtuple, otuple, dest, src))
 +			return -EINVAL;
 +		break;
 +	default:
@@ -1323,7 +1362,7 @@ Subject: [PATCH] hwnat: add natflow flow offload support
  struct ppp_channel {
 --- a/include/net/netfilter/nf_flow_table.h
 +++ b/include/net/netfilter/nf_flow_table.h
-@@ -176,6 +176,55 @@ struct flow_offload {
+@@ -176,6 +176,57 @@ struct flow_offload {
  	struct rcu_head				rcu_head;
  };
  
@@ -1337,9 +1376,11 @@ Subject: [PATCH] hwnat: add natflow flow offload support
 +struct flow_offload_tuple_fake {
 +	union {
 +		struct in_addr          src_v4;
++		struct in6_addr         src_v6;
 +	};
 +	union {
 +		struct in_addr          dst_v4;
++		struct in6_addr         dst_v6;
 +	};
 +	struct {
 +		__be16                  src_port;
