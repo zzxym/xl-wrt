@@ -89,11 +89,8 @@ platform_copy_config() {
 	local partdev
 
 	if export_partdevice partdev 1; then
-		mkdir -p /boot
-		[ -f /boot/kernel.img ] || mount -t vfat -o rw,noatime "/dev/$partdev" /boot
-		cp -af "$UPGRADE_BACKUP" "/boot/$BACKUP_FILE"
-		tar -C / -zxvf "$UPGRADE_BACKUP" boot/cmdline.txt boot/config.txt
-		sync
-		umount /boot
+		mount -t vfat -o rw,noatime "/dev/$partdev" /mnt
+		cp -af "$UPGRADE_BACKUP" "/mnt/$BACKUP_FILE"
+		umount /mnt
 	fi
 }
