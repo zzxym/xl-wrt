@@ -175,7 +175,7 @@ platform_check_image() {
 		;;
 	*)
 		nand_do_platform_check "$board" "$1"
-		return 0
+		return $?
 		;;
 	esac
 
