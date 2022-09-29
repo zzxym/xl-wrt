@@ -6,11 +6,10 @@ PKG_RELEASE=1
 PKG_LICENSE:=GPLv2
 PKG_LICENSE_FILES:=
 
-PKG_SOURCE_URL:=https://github.com/openwrt/mt76
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_DATE:=2024-01-18
-PKG_SOURCE_VERSION:=f77188160441d5f77f08dd517632ae3f60c653b0
-PKG_MIRROR_HASH:=133a5e44624fe1933c893ee0b8ac75a847753f3490c26518c2ed9798f9ef53e0
+PKG_SOURCE_VERSION:=20240119
+PKG_SOURCE_URL:=https://codeload.github.com/ptpt52/mt76/tar.gz/$(PKG_SOURCE_VERSION)?
+PKG_HASH:=8b779b0eeddf7613b0b44365dc694630487442223e5a08964236488f837f46e1
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_SOURCE_VERSION).tar.gz
 
 PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
 PKG_USE_NINJA:=0
@@ -581,6 +580,11 @@ define KernelPackage/mt7981-firmware/install
 		$(PKG_BUILD_DIR)/firmware/mt7981_wm.bin \
 		$(PKG_BUILD_DIR)/firmware/mt7981_rom_patch.bin \
 		$(1)/lib/firmware/mediatek
+	$(INSTALL_DIR) $(1)/lib/firmware/mediatek/update
+	cp \
+		$(PKG_BUILD_DIR)/firmware/mt7981_wo_0.bin \
+		$(PKG_BUILD_DIR)/firmware/mt7981_wo.bin \
+		$(1)/lib/firmware/mediatek/update
 endef
 
 define KernelPackage/mt7986-firmware/install
@@ -592,6 +596,11 @@ define KernelPackage/mt7986-firmware/install
 		$(PKG_BUILD_DIR)/firmware/mt7986_rom_patch_mt7975.bin \
 		$(PKG_BUILD_DIR)/firmware/mt7986_rom_patch.bin \
 		$(1)/lib/firmware/mediatek
+	$(INSTALL_DIR) $(1)/lib/firmware/mediatek/update
+	cp \
+		$(PKG_BUILD_DIR)/firmware/mt7986_wo_0.bin \
+		$(PKG_BUILD_DIR)/firmware/mt7986_wo_1.bin \
+		$(1)/lib/firmware/mediatek/update
 endef
 
 define KernelPackage/mt7921-firmware/install
