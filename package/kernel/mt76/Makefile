@@ -6,11 +6,10 @@ PKG_RELEASE=5
 PKG_LICENSE:=GPLv2
 PKG_LICENSE_FILES:=
 
-PKG_SOURCE_URL:=https://github.com/openwrt/mt76
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_DATE:=2022-11-12
-PKG_SOURCE_VERSION:=4bf2607362fc64fc4cb7d662feb736b7536c0811
-PKG_MIRROR_HASH:=fd4291ac89e14750073cc8c345772883d756bf32cf19fc7205fa344b5b3b91d0
+PKG_SOURCE_VERSION:=20221202
+PKG_SOURCE_URL:=https://codeload.github.com/ptpt52/mt76/tar.gz/$(PKG_SOURCE_VERSION)?
+PKG_HASH:=ad465ed4ddd086da0ccd17603cd0eac66de9cb39d4f1762f976505c250ef3f52
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_SOURCE_VERSION).tar.gz
 
 PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
 PKG_USE_NINJA:=0
@@ -483,6 +482,8 @@ endef
 define KernelPackage/mt7986-firmware/install
 	$(INSTALL_DIR) $(1)/lib/firmware/mediatek
 	cp \
+		$(PKG_BUILD_DIR)/firmware/mt7986_wo_0.bin \
+		$(PKG_BUILD_DIR)/firmware/mt7986_wo_1.bin \
 		$(PKG_BUILD_DIR)/firmware/mt7986_wa.bin \
 		$(PKG_BUILD_DIR)/firmware/mt7986_wm_mt7975.bin \
 		$(PKG_BUILD_DIR)/firmware/mt7986_wm.bin \
