@@ -231,8 +231,7 @@ define Device/asus_rt-ac42u
 	DEVICE_PACKAGES := ath10k-firmware-qca9984-ct kmod-usb-ledtrig-usbport
 	SUPPORTED_DEVICES += asus,rt-acrh17
 endef
-# Missing DSA Setup
-#TARGET_DEVICES += asus_rt-ac42u
+TARGET_DEVICES += asus_rt-ac42u
 
 define Device/asus_rt-ac58u
 	$(call Device/FitImageLzma)
