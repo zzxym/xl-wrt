@@ -47,9 +47,7 @@ jobs:
       - name: Set targets
         id: find_targets
         run: |
-          export TARGETS="$(perl ./scripts/dump-target-info.pl targets 2>/dev/null \
-            | sort -u -t '/' -k1,1 \
-            | awk '{ print $1 }')"
+          export TARGETS="ath79/generic bcm4908/generic bcm53xx/generic ipq806x/generic kirkwood/generic mediatek/filogic ramips/mt7620 rockchip/armv8 x86/64"
 
           JSON='['
           FIRST=1
