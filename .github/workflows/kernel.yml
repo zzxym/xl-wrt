@@ -1,24 +1,16 @@
 name: Build Kernel
 
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/kernel.yml'
-      - 'include/kernel-*'
-      - 'package/kernel/**'
-      - 'target/linux/generic/**'
   push:
-    paths:
-      - '.github/workflows/kernel.yml'
-      - 'include/kernel-*'
-      - 'package/kernel/**'
-      - 'target/linux/generic/**'
+    tags:
+    - '*'
 
 permissions:
   contents: read
 
 jobs:
   determine_targets:
+    if: contains(github.ref, 'tags/')
     name: Set targets
     runs-on: ubuntu-latest
     outputs:
