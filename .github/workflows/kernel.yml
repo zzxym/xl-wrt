@@ -204,6 +204,7 @@ jobs:
           path: "openwrt/logs"
 
   check-patch:
+    if: github.repository == 'openwrt/openwrt'
     name: Check Kernel patches
     needs: determine_targets
     runs-on: ubuntu-latest
