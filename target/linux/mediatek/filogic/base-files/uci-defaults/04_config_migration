@@ -1,0 +1,13 @@
+#
+# Copyright (C) 2022 X-WRT.COM
+#
+
+. /lib/functions.sh
+
+board=$(board_name)
+
+case "$board" in
+xiaomi,redmi-router-ax6000)
+	sed -i "s/list ports 'lan1'/list ports 'lan4'/g;s/option device 'lan1'/option device 'lan4'/g" /etc/config/network
+	;;
+esac
