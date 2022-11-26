@@ -6,9 +6,9 @@ PKG_RELEASE=5
 PKG_LICENSE:=GPLv2
 PKG_LICENSE_FILES:=
 
-PKG_SOURCE_VERSION:=20221202
+PKG_SOURCE_VERSION:=20221115
 PKG_SOURCE_URL:=https://codeload.github.com/ptpt52/mt76/tar.gz/$(PKG_SOURCE_VERSION)?
-PKG_HASH:=ad465ed4ddd086da0ccd17603cd0eac66de9cb39d4f1762f976505c250ef3f52
+PKG_HASH:=1b947c7bb015f5e97693c76a0128c51818bc178a80ae48d4de50f12eac457fdc
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_SOURCE_VERSION).tar.gz
 
 PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
@@ -482,8 +482,6 @@ endef
 define KernelPackage/mt7986-firmware/install
 	$(INSTALL_DIR) $(1)/lib/firmware/mediatek
 	cp \
-		$(PKG_BUILD_DIR)/firmware/mt7986_wo_0.bin \
-		$(PKG_BUILD_DIR)/firmware/mt7986_wo_1.bin \
 		$(PKG_BUILD_DIR)/firmware/mt7986_wa.bin \
 		$(PKG_BUILD_DIR)/firmware/mt7986_wm_mt7975.bin \
 		$(PKG_BUILD_DIR)/firmware/mt7986_wm.bin \
