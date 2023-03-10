@@ -12,11 +12,9 @@
 #include <linux/of_address.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
-
-#include "clk-gate.h"
 #include "clk-mtk.h"
+#include "clk-gate.h"
 #include "clk-mux.h"
-#include "clk-pll.h"
 
 #include <dt-bindings/clock/mediatek,mt7981-clk.h>
 #include <linux/clk.h>
@@ -64,13 +62,12 @@ static const struct mtk_pll_data plls[] = {
 
 static const struct of_device_id of_match_clk_mt7981_apmixed[] = {
 	{ .compatible = "mediatek,mt7981-apmixedsys", },
-	{ /* sentinel */ }
+	{}
 };
-MODULE_DEVICE_TABLE(of, of_match_clk_mt7981_apmixed);
 
 static int clk_mt7981_apmixed_probe(struct platform_device *pdev)
 {
-	struct clk_hw_onecell_data *clk_data;
+	struct clk_onecell_data *clk_data;
 	struct device_node *node = pdev->dev.of_node;
 	int r;
 
@@ -80,7 +77,9 @@ static int clk_mt7981_apmixed_probe(struct platform_device *pdev)
 
 	mtk_clk_register_plls(node, plls, ARRAY_SIZE(plls), clk_data);
 
-	r = of_clk_add_hw_provider(node, of_clk_hw_onecell_get, clk_data);
+	clk_prepare_enable(clk_data->clks[CLK_APMIXED_ARMPLL]);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r) {
 		pr_err("%s(): could not register clock provider: %d\n",
 		       __func__, r);
@@ -101,4 +100,3 @@ static struct platform_driver clk_mt7981_apmixed_drv = {
 	},
 };
 builtin_platform_driver(clk_mt7981_apmixed_drv);
-MODULE_LICENSE("GPL");

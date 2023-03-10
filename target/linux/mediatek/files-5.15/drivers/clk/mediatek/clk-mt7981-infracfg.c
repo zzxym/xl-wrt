@@ -229,7 +229,7 @@ static struct platform_driver clk_mt7981_infracfg_drv = {
 	.probe = clk_mt7981_infracfg_probe,
 	.driver = {
 		.name = "clk-mt7981-infracfg",
-		.of_match_table = of_match_clk_mt7986_infracfg,
+		.of_match_table = of_match_clk_mt7981_infracfg,
 	},
 };
 builtin_platform_driver(clk_mt7981_infracfg_drv);

@@ -84,36 +84,56 @@ static const struct mtk_gate eth_clks[] __initconst = {
 	GATE_ETH(CLK_ETH_WOCPU0_EN, "eth_wocpu0_en", "netsys_wed_mcu", 15),
 };
 
-static const struct mtk_clk_desc eth_desc = {
-	.clks = eth_clks,
-	.num_clks = ARRAY_SIZE(eth_clks),
-};
+static void __init mtk_sgmiisys_0_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	int r;
 
-static const struct mtk_clk_desc sgmii0_desc = {
-	.clks = sgmii0_clks,
-	.num_clks = ARRAY_SIZE(sgmii0_clks),
-};
+	clk_data = mtk_alloc_clk_data(ARRAY_SIZE(sgmii0_clks));
 
-static const struct mtk_clk_desc sgmii1_desc = {
-	.clks = sgmii1_clks,
-	.num_clks = ARRAY_SIZE(sgmii1_clks),
-};
+	mtk_clk_register_gates(node, sgmii0_clks, ARRAY_SIZE(sgmii0_clks),
+			       clk_data);
 
-static const struct of_device_id of_match_clk_mt7981_eth[] = {
-	{ .compatible = "mediatek,mt7981-ethsys", .data = &eth_desc },
-	{ .compatible = "mediatek,mt7981-sgmiisys_0", .data = &sgmii0_desc },
-	{ .compatible = "mediatek,mt7981-sgmiisys_1", .data = &sgmii1_desc },
-	{ /* sentinel */ }
-};
-MODULE_DEVICE_TABLE(of, of_match_clk_mt7981_eth);
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+	if (r)
+		pr_err("%s(): could not register clock provider: %d\n",
+		       __func__, r);
+}
+CLK_OF_DECLARE(mtk_sgmiisys_0, "mediatek,mt7981-sgmiisys_0",
+	       mtk_sgmiisys_0_init);
 
-static struct platform_driver clk_mt7981_eth_drv = {
-	.probe = mtk_clk_simple_probe,
-	.remove = mtk_clk_simple_remove,
-	.driver = {
-		.name = "clk-mt7981-eth",
-		.of_match_table = of_match_clk_mt7981_eth,
-	},
-};
-module_platform_driver(clk_mt7981_eth_drv);
-MODULE_LICENSE("GPL");
+static void __init mtk_sgmiisys_1_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	int r;
+
+	clk_data = mtk_alloc_clk_data(ARRAY_SIZE(sgmii1_clks));
+
+	mtk_clk_register_gates(node, sgmii1_clks, ARRAY_SIZE(sgmii1_clks),
+			       clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_err("%s(): could not register clock provider: %d\n",
+		       __func__, r);
+}
+CLK_OF_DECLARE(mtk_sgmiisys_1, "mediatek,mt7981-sgmiisys_1",
+	       mtk_sgmiisys_1_init);
+
+static void __init mtk_ethsys_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	int r;
+
+	clk_data = mtk_alloc_clk_data(ARRAY_SIZE(eth_clks));
+
+	mtk_clk_register_gates(node, eth_clks, ARRAY_SIZE(eth_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_err("%s(): could not register clock provider: %d\n",
+		       __func__, r);
+}
+CLK_OF_DECLARE(mtk_ethsys, "mediatek,mt7981-ethsys", mtk_ethsys_init);

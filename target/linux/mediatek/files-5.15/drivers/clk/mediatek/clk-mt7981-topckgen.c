@@ -417,7 +417,7 @@ static int clk_mt7981_topckgen_probe(struct platform_device *pdev)
 
 	mtk_clk_register_factors(top_divs, ARRAY_SIZE(top_divs), clk_data);
 	mtk_clk_register_muxes(top_muxes, ARRAY_SIZE(top_muxes), node,
-			       &mt7986_clk_lock, clk_data);
+			       &mt7981_clk_lock, clk_data);
 	mtk_clk_register_composites(top_aud_divs, ARRAY_SIZE(top_aud_divs), base,
                         &mt7981_clk_lock, clk_data);
 
@@ -444,7 +444,7 @@ static struct platform_driver clk_mt7981_topckgen_drv = {
 	.probe = clk_mt7981_topckgen_probe,
 	.driver = {
 		.name = "clk-mt7981-topckgen",
-		.of_match_table = of_match_clk_mt7986_topckgen,
+		.of_match_table = of_match_clk_mt7981_topckgen,
 	},
 };
 builtin_platform_driver(clk_mt7981_topckgen_drv);
