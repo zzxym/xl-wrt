@@ -232,7 +232,7 @@ Signed-off-by: Paolo Abeni <pabeni@redhat.com>
  /* currently no SoC has more than 2 macs */
  #define MTK_MAX_DEVS			2
  
-@@ -1123,6 +1141,14 @@ struct mtk_eth {
+@@ -1122,6 +1140,14 @@ struct mtk_eth {
  	struct rhashtable		flow_table;
  
  	struct bpf_prog			__rcu *prog;

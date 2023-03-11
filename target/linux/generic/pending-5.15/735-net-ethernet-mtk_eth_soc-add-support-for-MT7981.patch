@@ -71,7 +71,7 @@
  	{},
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -544,11 +544,22 @@
+@@ -540,11 +540,22 @@
  #define SGMSYS_QPHY_PWR_STATE_CTRL 0xe8
  #define	SGMII_PHYA_PWD		BIT(4)
  
@@ -94,7 +94,7 @@
  /* MT7628/88 specific stuff */
  #define MT7628_PDMA_OFFSET	0x0800
  #define MT7628_SDM_OFFSET	0x0c00
-@@ -729,6 +740,17 @@ enum mtk_clks_map {
+@@ -725,6 +736,17 @@ enum mtk_clks_map {
  				 BIT(MTK_CLK_SGMII2_CDR_FB) | \
  				 BIT(MTK_CLK_SGMII_CK) | \
  				 BIT(MTK_CLK_ETH2PLL) | BIT(MTK_CLK_SGMIITOP))
@@ -112,7 +112,7 @@
  #define MT7986_CLKS_BITMAP	(BIT(MTK_CLK_FE) | BIT(MTK_CLK_GP2) | BIT(MTK_CLK_GP1) | \
  				 BIT(MTK_CLK_WOCPU1) | BIT(MTK_CLK_WOCPU0) | \
  				 BIT(MTK_CLK_SGMII_TX_250M) | \
-@@ -842,6 +864,7 @@ enum mkt_eth_capabilities {
+@@ -838,6 +860,7 @@ enum mkt_eth_capabilities {
  	MTK_NETSYS_V2_BIT,
  	MTK_SOC_MT7628_BIT,
  	MTK_RSTCTRL_PPE1_BIT,
@@ -120,7 +120,7 @@
  
  	/* MUX BITS*/
  	MTK_ETH_MUX_GDM1_TO_GMAC1_ESW_BIT,
-@@ -876,6 +899,7 @@ enum mkt_eth_capabilities {
+@@ -872,6 +895,7 @@ enum mkt_eth_capabilities {
  #define MTK_NETSYS_V2		BIT(MTK_NETSYS_V2_BIT)
  #define MTK_SOC_MT7628		BIT(MTK_SOC_MT7628_BIT)
  #define MTK_RSTCTRL_PPE1	BIT(MTK_RSTCTRL_PPE1_BIT)
@@ -128,7 +128,7 @@
  
  #define MTK_ETH_MUX_GDM1_TO_GMAC1_ESW		\
  	BIT(MTK_ETH_MUX_GDM1_TO_GMAC1_ESW_BIT)
-@@ -954,6 +978,11 @@ enum mkt_eth_capabilities {
+@@ -950,6 +974,11 @@ enum mkt_eth_capabilities {
  		      MTK_MUX_U3_GMAC2_TO_QPHY | \
  		      MTK_MUX_GMAC12_TO_GEPHY_SGMII | MTK_QDMA)
  
@@ -140,44 +140,3 @@
  #define MT7986_CAPS  (MTK_GMAC1_SGMII | MTK_GMAC2_SGMII | \
  		      MTK_MUX_GMAC12_TO_GEPHY_SGMII | MTK_QDMA | \
  		      MTK_NETSYS_V2 | MTK_RSTCTRL_PPE1)
-@@ -1068,12 +1097,14 @@ struct mtk_soc_data {
-  * @ana_rgc3:          The offset refers to register ANA_RGC3 related to regmap
-  * @interface:         Currently configured interface mode
-  * @pcs:               Phylink PCS structure
-+ * @flags:             Flags indicating hardware properties
-  */
- struct mtk_pcs {
- 	struct regmap	*regmap;
- 	u32             ana_rgc3;
- 	phy_interface_t	interface;
- 	struct phylink_pcs pcs;
-+	u32		flags;
- };
- 
- /* struct mtk_sgmii -  This is the structure holding sgmii regmap and its
---- a/drivers/net/ethernet/mediatek/mtk_sgmii.c
-+++ b/drivers/net/ethernet/mediatek/mtk_sgmii.c
-@@ -90,6 +90,11 @@ static int mtk_pcs_config(struct phylink
- 		regmap_update_bits(mpcs->regmap, SGMSYS_QPHY_PWR_STATE_CTRL,
- 				   SGMII_PHYA_PWD, SGMII_PHYA_PWD);
- 
-+		if (mpcs->flags & MTK_SGMII_FLAG_PN_SWAP)
-+			regmap_update_bits(mpcs->regmap, SGMSYS_QPHY_WRAP_CTRL,
-+					   SGMII_PN_SWAP_MASK,
-+					   SGMII_PN_SWAP_TX_RX);
-+
- 		/* Reset SGMII PCS state */
- 		regmap_update_bits(mpcs->regmap, SGMII_RESERVED_0,
- 				   SGMII_SW_RESET, SGMII_SW_RESET);
-@@ -183,6 +188,11 @@ int mtk_sgmii_init(struct mtk_sgmii *ss,
- 
- 		ss->pcs[i].ana_rgc3 = ana_rgc3;
- 		ss->pcs[i].regmap = syscon_node_to_regmap(np);
-+
-+		ss->pcs[i].flags = 0;
-+		if (of_property_read_bool(np, "mediatek,pnswap"))
-+			ss->pcs[i].flags |= MTK_SGMII_FLAG_PN_SWAP;
-+
- 		of_node_put(np);
- 		if (IS_ERR(ss->pcs[i].regmap))
- 			return PTR_ERR(ss->pcs[i].regmap);

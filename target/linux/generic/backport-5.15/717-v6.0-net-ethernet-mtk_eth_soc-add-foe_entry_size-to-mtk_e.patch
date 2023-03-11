@@ -63,7 +63,7 @@ Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
  	netdev_features_t hw_features;
  	struct {
  		u32	txd_size;
-@@ -1140,6 +1142,14 @@ struct mtk_mac {
+@@ -1139,6 +1141,14 @@ struct mtk_mac {
  /* the struct describing the SoC. these are declared in the soc_xyz.c files */
  extern const struct of_device_id of_mtk_match[];
  

@@ -25,7 +25,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
  
  	/* MT76x8 has no hardware settings between for the MAC */
  	if (!MTK_HAS_CAPS(eth->soc->caps, MTK_SOC_MT7628) &&
-@@ -455,16 +455,6 @@ static void mtk_mac_config(struct phylin
+@@ -460,16 +460,6 @@ static void mtk_mac_config(struct phylin
  		return;
  	}
  
@@ -42,7 +42,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
  	return;
  
  err_phy:
-@@ -477,6 +467,26 @@ init_err:
+@@ -482,6 +472,26 @@ init_err:
  		mac->id, phy_modes(state->interface), err);
  }
  
@@ -69,7 +69,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
  static void mtk_mac_pcs_get_state(struct phylink_config *config,
  				  struct phylink_link_state *state)
  {
-@@ -581,6 +591,7 @@ static const struct phylink_mac_ops mtk_
+@@ -586,6 +596,7 @@ static const struct phylink_mac_ops mtk_
  	.mac_pcs_get_state = mtk_mac_pcs_get_state,
  	.mac_an_restart = mtk_mac_an_restart,
  	.mac_config = mtk_mac_config,
