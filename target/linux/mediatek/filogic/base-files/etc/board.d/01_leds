@@ -87,6 +87,10 @@ smartrg,sdg-8734)
 	ucidef_set_led_netdev "wan-orange" "WAN" "mdio-bus:00:orange:wan" "wan" "link_100 link_1000"
 	ucidef_set_led_netdev "wan-white" "WAN" "mdio-bus:00:white:wan" "wan" "link_10000"
 	;;
+tenbay,ac-2210e)
+	ucidef_set_led_netdev "wan1" "WAN1" "yellow:wan1" "wan1"
+	ucidef_set_led_netdev "wan2" "WAN2" "yellow:wan2" "wan2"
+	;;
 xiaomi,mi-router-wr30u-112m-nmbm|\
 xiaomi,mi-router-wr30u-stock|\
 xiaomi,mi-router-wr30u-ubootmod)
