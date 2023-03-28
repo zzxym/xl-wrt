@@ -128,10 +128,10 @@
 		reg = <31>;
 		dsa,member = <0 0>;
 		reset-gpios = <&pio 39 GPIO_ACTIVE_HIGH>;
-		interrupt-controller;
-		#interrupt-cells = <1>;
-		interrupt-parent = <&pio>;
-		interrupts = <38 IRQ_TYPE_LEVEL_HIGH>;
+		//interrupt-controller;
+		//#interrupt-cells = <1>;
+		//interrupt-parent = <&pio>;
+		//interrupts = <38 IRQ_TYPE_LEVEL_HIGH>;
 	};
 };
 
@@ -205,10 +205,10 @@
 		reset-gpios = <&pio 4 GPIO_ACTIVE_HIGH>;
 		reset-delay-us = <600>;
 		reset-post-delay-us = <20000>;
-		interrupt-controller;
-		#interrupt-cells = <1>;
-		interrupt-parent = <&pio>;
-		interrupts = <6 IRQ_TYPE_LEVEL_HIGH>;
+		//interrupt-controller;
+		//#interrupt-cells = <1>;
+		//interrupt-parent = <&pio>;
+		//interrupts = <6 IRQ_TYPE_LEVEL_HIGH>;
 	};
 };
 
