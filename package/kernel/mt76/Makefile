@@ -6,9 +6,9 @@ PKG_RELEASE=5
 PKG_LICENSE:=GPLv2
 PKG_LICENSE_FILES:=
 
-PKG_SOURCE_VERSION:=20230422
+PKG_SOURCE_VERSION:=20230423
 PKG_SOURCE_URL:=https://codeload.github.com/ptpt52/mt76/tar.gz/$(PKG_SOURCE_VERSION)?
-PKG_HASH:=ac9be42ababe99624a11d4e63b7a65a9dd7a81adf54d165b65cd72408be6dfb2
+PKG_HASH:=015183ea66db0f170c4152cca6a09e3432b97eafec5fe5de4a551782ae512605
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_SOURCE_VERSION).tar.gz
 
 PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
@@ -242,6 +242,12 @@ define KernelPackage/mt7916-firmware
   $(KernelPackage/mt76-default)
   DEPENDS+=+kmod-mt7915e
   TITLE:=MediaTek MT7916 firmware
+endef
+
+define KernelPackage/mt7981-firmware
+  $(KernelPackage/mt76-default)
+  DEPENDS:=@TARGET_mediatek_filogic
+  TITLE:=MediaTek MT7981 firmware
 endef
 
 define KernelPackage/mt7986-firmware
@@ -509,6 +515,15 @@ define KernelPackage/mt7986-firmware/install
 		$(1)/lib/firmware/mediatek
 endef
 
+define KernelPackage/mt7981-firmware/install
+	$(INSTALL_DIR) $(1)/lib/firmware/mediatek
+	cp \
+		$(PKG_BUILD_DIR)/firmware/mt7981_wa.bin \
+		$(PKG_BUILD_DIR)/firmware/mt7981_wm.bin \
+		$(PKG_BUILD_DIR)/firmware/mt7981_rom_patch.bin \
+		$(1)/lib/firmware/mediatek
+endef
+
 define KernelPackage/mt7921-firmware/install
 	$(INSTALL_DIR) $(1)/lib/firmware/mediatek
 	cp \
@@ -547,6 +562,7 @@ $(eval $(call KernelPackage,mt7663s))
 $(eval $(call KernelPackage,mt7915-firmware))
 $(eval $(call KernelPackage,mt7915e))
 $(eval $(call KernelPackage,mt7916-firmware))
+$(eval $(call KernelPackage,mt7981-firmware))
 $(eval $(call KernelPackage,mt7986-firmware))
 $(eval $(call KernelPackage,mt7921-firmware))
 $(eval $(call KernelPackage,mt7921-common))
