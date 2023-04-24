@@ -44,6 +44,7 @@ mediatek_setup_interfaces()
 	mercusys,mr90x-v1)
 		ucidef_set_interfaces_lan_wan "lan0 lan1 lan2" eth1
 		;;
+	tenbay,wr3000k|\
 	cetron,ct3003|\
 	qihoo,360t7)
 		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3" wan
