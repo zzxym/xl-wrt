@@ -40,4 +40,14 @@ boot() {
 		[ $(printf %d $(fw_printenv -n Image1Try)) -gt 0 ] && fw_setenv Image1Try 0
 		;;
 	esac
+
+	#set irq smp_affinity for ethernet and usb1
+	irq=$(echo $(cat /proc/interrupts | grep ethernet | cut -d: -f1))
+	echo 4 >/proc/irq/${irq}/smp_affinity
+	irq=$(echo $(cat /proc/interrupts | grep usb1 | cut -d: -f1))
+	echo 2 >/proc/irq/${irq}/smp_affinity
+
+	test -e /sys/class/net/usb0/queues/rx-0/rps_cpus && echo 4 > /sys/class/net/usb0/queues/rx-0/rps_cpus
+	test -e /sys/class/net/wwan0/queues/rx-0/rps_cpus && echo 4 > /sys/class/net/wwan0/queues/rx-0/rps_cpus
+	test -e /sys/class/net/wwan0_1/queues/rx-0/rps_cpus && echo 8 > /sys/class/net/wwan0_1/queues/rx-0/rps_cpus
 }
