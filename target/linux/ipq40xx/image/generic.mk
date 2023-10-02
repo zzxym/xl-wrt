@@ -687,7 +687,7 @@ define Device/linksys_ea6350v3
 	IMAGE_SIZE := 35840k
 	UBINIZE_OPTS := -E 5
 	IMAGES += factory.bin
-	IMAGE/factory.bin := append-kernel | append-uImage-fakehdr filesystem | pad-to $$$$(KERNEL_SIZE) | append-ubi | linksys-image type=EA6350v3
+	IMAGE/factory.bin := append-kernel | append-uImage-fakehdr filesystem | pad-to $$$$(KERNEL_SIZE) | append-ubi | check-size | linksys-image type=EA6350v3
 endef
 TARGET_DEVICES += linksys_ea6350v3
 
@@ -703,7 +703,7 @@ define Device/linksys_ea8300
 	PAGESIZE := 2048
 	UBINIZE_OPTS := -E 5    # EOD marks to "hide" factory sig at EOF
 	IMAGES += factory.bin
-	IMAGE/factory.bin  := append-kernel | pad-to $$$$(KERNEL_SIZE) | append-ubi | linksys-image type=EA8300
+	IMAGE/factory.bin  := append-kernel | pad-to $$$$(KERNEL_SIZE) | append-ubi | check-size | linksys-image type=EA8300
 	DEVICE_PACKAGES := ath10k-firmware-qca9888-ct kmod-usb-ledtrig-usbport
 endef
 TARGET_DEVICES += linksys_ea8300
@@ -720,7 +720,7 @@ define Device/linksys_mr8300
 	PAGESIZE := 2048
 	UBINIZE_OPTS := -E 5    # EOD marks to "hide" factory sig at EOF
 	IMAGES += factory.bin
-	IMAGE/factory.bin  := append-kernel | pad-to $$$$(KERNEL_SIZE) | append-ubi | linksys-image type=MR8300
+	IMAGE/factory.bin  := append-kernel | pad-to $$$$(KERNEL_SIZE) | append-ubi | check-size | linksys-image type=MR8300
 	DEVICE_PACKAGES := ath10k-firmware-qca9888-ct kmod-usb-ledtrig-usbport
 endef
 TARGET_DEVICES += linksys_mr8300
@@ -737,7 +737,7 @@ define Device/linksys_whw03v2
 	PAGESIZE := 2048
 	UBINIZE_OPTS := -E 5    # EOD marks to "hide" factory sig at EOF
 	IMAGES += factory.bin
-	IMAGE/factory.bin  := append-kernel | pad-to $$$$(KERNEL_SIZE) | append-ubi | linksys-image type=WHW03v2
+	IMAGE/factory.bin  := append-kernel | pad-to $$$$(KERNEL_SIZE) | append-ubi | check-size | linksys-image type=WHW03v2
 	DEVICE_PACKAGES := ath10k-firmware-qca9888-ct kmod-leds-pca963x kmod-spi-dev kmod-bluetooth
 endef
 TARGET_DEVICES += linksys_whw03v2
@@ -747,13 +747,13 @@ define Device/linksys_whw01
 	DEVICE_VENDOR := Linksys
 	DEVICE_MODEL := WHW01
 	KERNEL_SIZE := 6144k
-	IMAGE_SIZE := 75776K
+	IMAGE_SIZE := 75776k
 	SOC := qcom-ipq4018
 	BLOCKSIZE := 128k
 	PAGESIZE := 2048
 	UBINIZE_OPTS := -E 5    # EOD marks to "hide" factory sig at EOF
 	IMAGES += factory.bin
-	IMAGE/factory.bin := append-kernel | pad-to $$$$(KERNEL_SIZE) | append-ubi | linksys-image type=WHW01
+	IMAGE/factory.bin := append-kernel | pad-to $$$$(KERNEL_SIZE) | append-ubi | check-size | linksys-image type=WHW01
 	DEVICE_PACKAGES := uboot-envtools kmod-leds-pca963x
 endef
 TARGET_DEVICES += linksys_whw01
