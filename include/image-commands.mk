@@ -383,11 +383,30 @@ define Build/kernel-bin
 	cp $< $@
 endef
 
+# Linksys image footer (256 bytes) is appended to the factory image and tested
+# by both the Linksys Upgrader (as observed in civic) and OpenWrt sysupgrade.
+# Final file is $BLOCKSIZE aligned to satisfy some devices' TFTP clients, by
+# preceding the footer with padding (0xFF).
+# Footer format:
+#  .LINKSYS.        Checked by Linksys upgrader before continuing.  (9 bytes)
+#  <VERSION>        Upgrade version number, unchecked so arbitrary. (8 bytes)
+#  <TYPE>           Model of device, space padded (0x20).          (15 bytes)
+#  <CRC>            CRC checksum of factory image to flash.         (8 bytes)
+#  <padding>        Padding ('0' + 0x20 * 7)                        (8 bytes)
+#  <signature>      Signature of signer, unchecked so arbitrary.   (16 bytes)
+#  <padding>        Padding with nulls (0x00)                     (192 bytes)
 define Build/linksys-image
-	$(TOPDIR)/scripts/linksys-image.sh \
+	let \
+		size="$$(stat -c%s $@)" \
+		pad="$(subst k,* 1024,$(BLOCKSIZE))" \
+		offset="256" \
+		pad="(pad - ((size + offset) % pad)) % pad"; \
+		dd if=/dev/zero bs=$$pad count=1 | tr '\000' '\377' >> $@
+	printf ".LINKSYS.01000409%-15s%08X%-8s%-16s" \
 		"$(call param_get_default,type,$(1),$(DEVICE_NAME))" \
-		$@ $@.new
-		mv $@.new $@
+		"$$(cksum $@ | cut -d ' ' -f1)" \
+		"0" "K0000000F0246434" >> $@
+	dd if=/dev/zero bs=192 count=1 >> $@
 endef
 
 define Build/lzma
