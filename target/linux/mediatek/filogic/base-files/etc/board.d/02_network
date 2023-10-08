@@ -53,6 +53,7 @@ mediatek_setup_interfaces()
 		ucidef_set_interfaces_lan_wan "lan0 lan1 lan2" eth1
 		;;
 	tenbay,wr3000k|\
+	cetron,ct3003-ubootlayout|\
 	cetron,ct3003|\
 	jcg,q30-pro|\
 	jcg,q30-pro-nmbm|\
@@ -111,6 +112,7 @@ mediatek_setup_macs()
 	bananapi,bpi-r3)
 		wan_mac=$(macaddr_add $(cat /sys/class/net/eth0/address) 1)
 		;;
+	cetron,ct3003-ubootlayout|\
 	cetron,ct3003)
 		lan_mac=$(mtd_get_mac_binary "art" 0)
 		wan_mac=$(macaddr_add "$lan_mac" 3)
