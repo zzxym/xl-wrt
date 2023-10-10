@@ -1,0 +1,20 @@
+From ea22fc9138f7bb2cbbbb4f8fd5b491884f47d7d7 Mon Sep 17 00:00:00 2001
+From: Chen Minqiang <ptpt52@gmail.com>
+Date: Tue, 10 Oct 2023 15:50:03 +0800
+Subject: [PATCH] kernel: usb: usbnet: netif_receive_skb fast for natflow
+
+---
+ drivers/net/usb/usbnet.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -346,7 +346,7 @@ void usbnet_skb_return (struct usbnet *d
+ 	if (skb_defer_rx_timestamp(skb))
+ 		return;
+ 
+-	status = netif_rx (skb);
++	status = netif_receive_skb(skb);
+ 	if (status != NET_RX_SUCCESS)
+ 		netif_dbg(dev, rx_err, dev->net,
+ 			  "netif_rx status %d\n", status);
