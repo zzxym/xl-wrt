@@ -459,6 +459,7 @@ void init_gsw(struct intel_gsw *gsw)
 	} while (0);
 #endif
 
+	gsw_reg_wr(&gsw->pd, LED_BRT_CTRL_MAXLEVEL_OFFSET, LED_BRT_CTRL_MINLEVEL_SHIFT, LED_BRT_CTRL_MINLEVEL_SIZE, 15);
 	intel_init(gsw);
 
 #ifdef CONFIG_SWCONFIG
@@ -511,6 +512,18 @@ static int gsw150_probe(struct platform_device *pdev)
 	gsw->bus = mdio_bus;
 
 	gsw->reset_pin = of_get_named_gpio(np, "mediatek,reset-pin", 0);
+	if (gsw->reset_pin >= 0) {
+		int ret = devm_gpio_request(gsw->dev, gsw->reset_pin, "gsw150-reset");
+		if (ret) {
+			dev_info(gsw->dev, "Failed to request gpio %d\n",
+					gsw->reset_pin);
+		} else {
+			gpio_direction_output(gsw->reset_pin, 1); //default high since it is active low
+			msleep(30);
+			gpio_set_value(gsw->reset_pin, 0);
+			msleep(500);
+		}
+	}
 
 	/* Fetch the SMI address dirst */
 	if (of_property_read_u32(np, "mediatek,smi-addr", &gsw->smi_addr))
@@ -532,6 +545,8 @@ static int gsw150_remove(struct platform_device *pdev)
 	struct intel_gsw *gsw = platform_get_drvdata(pdev);
 	if (gsw) {
 		deinit_gsw(gsw);
+		if (gsw->reset_pin >= 0)
+			devm_gpio_free(&pdev->dev, gsw->reset_pin);
 	}
 	platform_set_drvdata(pdev, NULL);
 
