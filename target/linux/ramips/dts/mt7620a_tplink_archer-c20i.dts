@@ -53,11 +53,12 @@
 };
 
 &wmac {
-	nvmem-cells = <&macaddr_rom_f100 0>;
+	nvmem-cells = <&macaddr_rom_f100>;
 	nvmem-cell-names = "mac-address";
 };
 
 &wifi {
-	nvmem-cells = <&macaddr_rom_f100 (-1)>;
+	nvmem-cells = <&macaddr_rom_f100>;
 	nvmem-cell-names = "mac-address";
+	mac-address-increment = <(-1)>;
 };

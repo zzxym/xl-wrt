@@ -79,16 +79,6 @@
 				label = "factory";
 				reg = <0xc0000 0x40000>;
 				read-only;
-
-				nvmem-layout {
-					compatible = "fixed-layout";
-					#address-cells = <1>;
-					#size-cells = <1>;
-
-					macaddr_factory_28: macaddr@28 {
-						reg = <0x28 0x6>;
-					};
-				};
 			};
 
 			partition@100000 {
@@ -149,6 +139,7 @@
 &ethernet {
 	pinctrl-names = "default";
 	pinctrl-0 = <&ephy_pins>;
+	mtd-mac-address = <&factory 0x28>;
 	nvmem-cells = <&macaddr_factory_28>;
 	nvmem-cell-names = "mac-address";
 	mediatek,portmap = "llllw";
@@ -182,5 +173,15 @@
 			groups = "pa";
 			function = "pa";
 		};
+	};
+};
+
+&factory {
+	compatible = "nvmem-cells";
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	macaddr_factory_28: macaddr@28 {
+		reg = <0x28 0x6>;
 	};
 };
