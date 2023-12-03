@@ -73,11 +73,13 @@
 	pinctrl-0 = <&pa_pins>;
 	pinctrl-1 = <&pa_gpio_pins>;
 
-	nvmem-cells = <&macaddr_rom_f100 (-2)>;
+	nvmem-cells = <&macaddr_rom_f100>;
 	nvmem-cell-names = "mac-address";
+	mac-address-increment = <(-2)>;
 };
 
 &wifi {
-	nvmem-cells = <&macaddr_rom_f100 (-1)>;
+	nvmem-cells = <&macaddr_rom_f100>;
 	nvmem-cell-names = "mac-address";
+	mac-address-increment = <(-1)>;
 };
