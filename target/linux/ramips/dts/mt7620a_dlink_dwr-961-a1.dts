@@ -58,6 +58,7 @@
 };
 
 &wifi {
-	nvmem-cells = <&eeprom_config_e29e>, <&macaddr_config_e50e 2>;
+	nvmem-cells = <&eeprom_config_e29e>, <&macaddr_config_e50e>;
 	nvmem-cell-names = "eeprom", "mac-address";
+	mac-address-increment = <2>;
 };
