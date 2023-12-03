@@ -113,16 +113,6 @@
 				label = "factory";
 				reg = <0x40000 0x10000>;
 				read-only;
-
-				nvmem-layout {
-					compatible = "fixed-layout";
-					#address-cells = <1>;
-					#size-cells = <1>;
-
-					macaddr_factory_4: macaddr@4 {
-						reg = <0x4 0x6>;
-					};
-				};
 			};
 
 			partition@50000 {
@@ -137,9 +127,10 @@
 &ethernet {
 	pinctrl-names = "default";
 	pinctrl-0 = <&ephy_pins>;
+
+	mtd-mac-address = <&factory 0x4>;
+
 	mediatek,portmap = "llllw";
-	nvmem-cells = <&macaddr_factory_4>;
-	nvmem-cell-names = "mac-address";
 };
 
 &wmac {
