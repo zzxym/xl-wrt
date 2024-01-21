@@ -1,9 +1,9 @@
-src-git packages https://github.com/x-wrt/packages.git;8.0_b202008301032
-src-git luci https://github.com/x-wrt/luci.git;8.0_b202008301032
-src-git routing https://github.com/x-wrt/routing.git;8.0_b202008301032
-src-git telephony https://github.com/x-wrt/telephony.git;8.0_b202008301032
-src-git freifunk https://github.com/x-wrt/freifunk-openwrt-packages.git;8.0_b202008301032
-src-git x https://github.com/x-wrt/com.x-wrt.git;8.0_b202008301032
+src-git packages https://github.com/x-wrt/packages.git;ar71xx
+src-git luci https://github.com/x-wrt/luci.git;ar71xx
+src-git routing https://github.com/x-wrt/routing.git;ar71xx
+src-git telephony https://github.com/x-wrt/telephony.git;ar71xx
+src-git freifunk https://github.com/x-wrt/freifunk-openwrt-packages.git;ar71xx
+src-git x https://github.com/x-wrt/com.x-wrt.git;ar71xx
 #src-git video https://github.com/openwrt/video.git
 #src-git targets https://github.com/openwrt/targets.git
 #src-git management https://github.com/openwrt-management/packages.git
