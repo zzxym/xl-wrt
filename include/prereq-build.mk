@@ -27,9 +27,10 @@ $(eval $(call TestHostCommand,proper-umask, \
 	umask | grep -xE 0?0[012][012]))
 
 $(eval $(call SetupHostCommand,gcc, \
-	Please install the GNU C Compiler (gcc) 4.8 or later, \
-	$(CC) -dumpversion | grep -E '^(4\.[8-9]|[5-9]\.?|10\.?)', \
-	gcc -dumpversion | grep -E '^(4\.[8-9]|[5-9]\.?|10\.?)', \
+	Please install the GNU C Compiler (gcc) 8 or later, \
+	$(CC) -dumpversion | grep -E '^([8-9]\.?|1[0-9]\.?)', \
+	gcc -dumpversion | grep -E '^([8-9]\.?|1[0-9]\.?)', \
+	gcc-8 -dumpversion | grep -E '^([8-9]\.?|1[0-9]\.?)', \
 	gcc --version | grep -E 'Apple.(LLVM|clang)' ))
 
 $(eval $(call TestHostCommand,working-gcc, \
@@ -39,9 +40,10 @@ $(eval $(call TestHostCommand,working-gcc, \
 		gcc -x c -o $(TMP_DIR)/a.out -))
 
 $(eval $(call SetupHostCommand,g++, \
-	Please install the GNU C++ Compiler (g++) 4.8 or later, \
-	$(CXX) -dumpversion | grep -E '^(4\.[8-9]|[5-9]\.?|10\.?)', \
-	g++ -dumpversion | grep -E '^(4\.[8-9]|[5-9]\.?|10\.?)', \
+	Please install the GNU C++ Compiler (g++) 8 or later, \
+	$(CXX) -dumpversion | grep -E '^([8-9]\.?|1[0-9]\.?)', \
+	g++ -dumpversion | grep -E '^([8-9]\.?|1[0-9]\.?)', \
+	g++-8 -dumpversion | grep -E '^([8-9]\.?|1[0-9]\.?)', \
 	g++ --version | grep -E 'Apple.(LLVM|clang)' ))
 
 $(eval $(call TestHostCommand,working-g++, \
