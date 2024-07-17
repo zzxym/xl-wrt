@@ -1,5 +1,5 @@
 src-git packages https://github.com/x-wrt/packages.git;21.10_b202201032246
-src-git luci https://github.com/x-wrt/luci.git;21.10_b202201032246
+src-git luci https://github.com/x-wrt/luci.git;ugreen
 src-git routing https://github.com/x-wrt/routing.git;21.10_b202201032246
 src-git telephony https://github.com/x-wrt/telephony.git;21.10_b202201032246
 src-git x https://github.com/x-wrt/com.x-wrt.git;ugreen
