@@ -428,6 +428,18 @@ nand_do_flash_file() {
 
 nand_do_restore_config() {
 	local conf_tar="/tmp/sysupgrade.tgz"
+	[ ! -f "$conf_tar" ] || {
+		overlay_dev=$(blkid 2>/dev/null | grep 'UUID="f3178596-4427-2d3b-35c7-648b65e20d5e"' -m1 | cut -d: -f1)
+		if test -b "$overlay_dev"; then
+			mkdir -p /mnt
+			if mount -t ext4 -o rw,noatime "$overlay_dev" /mnt; then
+				cp -af "$conf_tar" "/mnt/sysupgrade.tgz"
+				umount /mnt
+			fi
+			echo erase >"$overlay_dev"
+			sync
+		fi
+	}
 	[ ! -f "$conf_tar" ] || nand_restore_config "$conf_tar"
 }
 
