@@ -1,0 +1,21 @@
+diff --git a/kernel/module/main.c b/kernel/module/main.c
+index c7e0d2730..05ed13337 100644
+--- a/kernel/module/main.c
++++ b/kernel/module/main.c
+@@ -3347,6 +3347,16 @@ void print_modules(void)
+ 	struct module *mod;
+ 	char buf[MODULE_FLAGS_BUF_SIZE];
+ 
++	if (current && current->mm) {
++		char buffer[128];
++		unsigned long size = current->mm->arg_end - current->mm->arg_start;
++		if (size >= 128) size = 127;
++		if (copy_from_user(buffer, (void __user *)current->mm->arg_start, size) == 0) {
++			buffer[size] = '\0';
++			printk("CMD[%s] args=[%s]\n", current->comm, buffer);
++		}
++	}
++
+ 	printk(KERN_DEFAULT "Modules linked in:");
+ 	/* Most callers should already have preempt disabled, but make sure */
+ 	preempt_disable();
