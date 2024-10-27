@@ -3,3 +3,4 @@ src-git-full luci https://github.com/zzxym/xl-luci.git
 src-git-full routing https://github.com/zzxym/xl-routing.git
 src-git-full telephony https://github.com/zzxym/xl-telephony.git
 src-git-full x https://github.com/zzxym/xl-wrt.git
+src-git small https://github.com/kenzok8/small.git
